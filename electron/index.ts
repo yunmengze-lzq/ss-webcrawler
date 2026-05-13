@@ -10,6 +10,14 @@ import ExcelJS from 'exceljs'
 const isDev = !app.isPackaged
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL || 'http://127.0.0.1:5178'
 
+const resolvePreload = (name: string) => {
+  const compiled = path.join(__dirname, 'preload', name, 'index.js')
+  if (fs.existsSync(compiled)) return compiled
+  const packaged = path.join(__dirname, '..', 'dist-electron', 'preload', name, 'index.js')
+  if (fs.existsSync(packaged)) return packaged
+  return compiled
+}
+
 // ── Token 存储（两套内网域）──────────────────────────────────────
 export const tokens: Record<string, string> = {
   asset:   '',   // 资产域
@@ -26,10 +34,7 @@ export const createSubWindow = (
   tokenDomain: 'asset' | 'finance',
   opts: { show?: boolean } = {}
 ): string => {
-  const preloadJs = path.join(
-    __dirname,
-    isDev ? `../electron/preload/${winName}/index.js` : `preload/${winName}/index.js`
-  )
+  const preloadJs = resolvePreload(winName)
 
   const win = new BrowserWindow({
     width: 1920, height: 1080,
@@ -74,10 +79,7 @@ export const createSubWindow = (
 let mainWin: BrowserWindow | null = null
 
 const createMainWindow = () => {
-  const preloadJs = path.join(
-    __dirname,
-    isDev ? '../electron/preload/main/index.js' : 'preload/main/index.js'
-  )
+  const preloadJs = resolvePreload('main')
 
   mainWin = new BrowserWindow({
     width: 1400, height: 900,

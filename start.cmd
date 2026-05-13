@@ -40,4 +40,7 @@ if not exist "%APP_ENTRY%" (
   exit /b 1
 )
 
+set "APP_URL=file:///%APP_ROOT:\=/%dist/index.html"
+set "VITE_DEV_SERVER_URL=%APP_URL%"
+
 start "" /D "%APP_ROOT%" "%APP_ROOT%node_modules\electron\dist\electron.exe" "%APP_ENTRY%"
