@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>低压台区规划智能体系统 · 方案文档</title>
+<style>
+:root {
+  --bg: #0c0e14;
+  --bg1: #12151e;
+  --bg2: #181c28;
+  --bg3: #1e2335;
+  --border: #252a3d;
+  --border2: #2e3550;
+  --text: #dde3f0;
+  --muted: #7a86a0;
+  --dim: #4a5470;
+
+  --blue: #4a9eff;
+  --blue-bg: #0d2040;
+  --blue-glow: rgba(74,158,255,.12);
+
+  --green: #2dd4a0;
+  --green-bg: #0a2820;
+  --green-glow: rgba(45,212,160,.1);
+
+  --amber: #f5a623;
+  --amber-bg: #241800;
+
+  --purple: #a78bfa;
+  --purple-bg: #1a1030;
+
+  --coral: #f87171;
+  --coral-bg: #250e0e;
+
+  --teal: #22d3ee;
+  --teal-bg: #06202a;
+
+  --r: 10px;
+  --r2: 6px;
+  --shadow: 0 2px 20px rgba(0,0,0,.5);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.layout { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  padding: 24px 0;
+  position: sticky; top: 0; height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.sidebar-logo .proj { font-size: 11px; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; }
+.sidebar-logo .name { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 4px; }
+.sidebar-logo .ver  { font-size: 10px; color: var(--dim); margin-top: 2px; }
+
+.nav-group { margin-bottom: 8px; }
+.nav-label {
+  font-size: 10px; color: var(--dim); letter-spacing: .8px;
+  text-transform: uppercase; padding: 6px 20px 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 20px; cursor: pointer;
+  font-size: 13px; color: var(--muted);
+  transition: all .15s; border-left: 2px solid transparent;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--bg2); color: var(--text); }
+.nav-item.active { background: var(--blue-bg); color: var(--blue); border-left-color: var(--blue); }
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* Main */
+.main { flex: 1; min-width: 0; padding: 40px 48px; max-width: 900px; }
+
+/* Section */
+.section { margin-bottom: 56px; scroll-margin-top: 24px; }
+
+/* ── Typography ─────────────────────────────────────────── */
+h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--text); padding-top: 8px; }
+h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+p  { color: var(--muted); line-height: 1.75; margin-bottom: 12px; }
+strong { color: var(--text); font-weight: 600; }
+
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--blue-bg); color: var(--blue);
+  border: 1px solid rgba(74,158,255,.3);
+  padding: 3px 10px; border-radius: 99px;
+  font-size: 11px; font-weight: 600; letter-spacing: .3px;
+  margin-bottom: 16px;
+}
+.hero-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+
+.hero-sub { font-size: 15px; color: var(--muted); line-height: 1.7; max-width: 600px; margin-bottom: 24px; }
+
+/* Meta row */
+.meta-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; }
+.meta-item { }
+.meta-label { font-size: 10px; color: var(--dim); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 3px; }
+.meta-val { font-size: 13px; color: var(--text); font-weight: 500; }
+
+/* ── Cards ──────────────────────────────────────────────── */
+.card {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.card-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+.stat-card {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 16px 20px;
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%;
+}
+.stat-card.blue::before { background: var(--blue); }
+.stat-card.green::before { background: var(--green); }
+.stat-card.amber::before { background: var(--amber); }
+.stat-card.purple::before { background: var(--purple); }
+.stat-card.coral::before { background: var(--coral); }
+.stat-card.teal::before { background: var(--teal); }
+
+.stat-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.stat-val   { font-size: 20px; font-weight: 700; }
+.stat-card.blue .stat-val   { color: var(--blue);   }
+.stat-card.green .stat-val  { color: var(--green);  }
+.stat-card.amber .stat-val  { color: var(--amber);  }
+.stat-card.purple .stat-val { color: var(--purple); }
+.stat-card.coral .stat-val  { color: var(--coral);  }
+.stat-card.teal .stat-val   { color: var(--teal);   }
+.stat-desc { font-size: 11px; color: var(--dim); margin-top: 4px; }
+
+/* ── Tags / Badges ──────────────────────────────────────── */
+.tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: .2px;
+}
+.tag.blue   { background: var(--blue-bg);   color: var(--blue);   }
+.tag.green  { background: var(--green-bg);  color: var(--green);  }
+.tag.amber  { background: var(--amber-bg);  color: var(--amber);  }
+.tag.purple { background: var(--purple-bg); color: var(--purple); }
+.tag.coral  { background: var(--coral-bg);  color: var(--coral);  }
+.tag.teal   { background: var(--teal-bg);   color: var(--teal);   }
+.tag.dim    { background: var(--bg3);       color: var(--muted);  }
+
+/* ── Table ──────────────────────────────────────────────── */
+.tbl-wrap { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  background: var(--bg2); color: var(--muted);
+  font-size: 11px; font-weight: 600; letter-spacing: .4px;
+  text-transform: uppercase; text-align: left;
+  padding: 10px 16px; border-bottom: 1px solid var(--border);
+}
+td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg2); }
+
+/* ── Code ───────────────────────────────────────────────── */
+.code-block {
+  background: #090c14;
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 16px 20px;
+  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  font-size: 12.5px; line-height: 1.75;
+  color: #8ec3a7; overflow-x: auto;
+  margin-bottom: 16px; position: relative;
+}
+.code-block .cm { color: #4a5e6a; }
+.code-block .kw { color: #79b8ff; }
+.code-block .st { color: #f0b27a; }
+.code-block .fn { color: #68d391; }
+.code-block .nu { color: #a78bfa; }
+pre { margin: 0; white-space: pre; }
+
+/* ── Flow diagram ───────────────────────────────────────── */
+.flow {
+  display: flex; align-items: stretch; gap: 0;
+  margin-bottom: 20px; overflow-x: auto;
+}
+.flow-step {
+  flex: 1; min-width: 120px;
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 14px 14px 12px;
+  position: relative;
+}
+.flow-step + .flow-step { margin-left: 28px; }
+.flow-step + .flow-step::before {
+  content: '→';
+  position: absolute; left: -22px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--dim); font-size: 16px;
+}
+.flow-num {
+  font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  margin-bottom: 5px;
+}
+.flow-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.flow-desc  { font-size: 11px; color: var(--dim); line-height: 1.5; }
+.flow-step.blue  { border-top: 2px solid var(--blue);   } .flow-step.blue  .flow-num { color: var(--blue);   }
+.flow-step.green { border-top: 2px solid var(--green);  } .flow-step.green .flow-num { color: var(--green);  }
+.flow-step.amber { border-top: 2px solid var(--amber);  } .flow-step.amber .flow-num { color: var(--amber);  }
+.flow-step.purple{ border-top: 2px solid var(--purple); } .flow-step.purple.flow-num { color: var(--purple); }
+.flow-step.coral { border-top: 2px solid var(--coral);  } .flow-step.coral .flow-num { color: var(--coral);  }
+.flow-step.teal  { border-top: 2px solid var(--teal);   } .flow-step.teal  .flow-num { color: var(--teal);   }
+
+/* ── Agent cards ─────────────────────────────────────────── */
+.agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.agent-card {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 20px; position: relative;
+}
+.agent-card .agent-id {
+  font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  margin-bottom: 6px;
+}
+.agent-card .agent-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.agent-card .agent-resp {
+  font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 10px;
+}
+.resp-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: flex-start; }
+.resp-label {
+  font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 600;
+  flex-shrink: 0; margin-top: 1px;
+}
+.resp-label.code { background: var(--teal-bg); color: var(--teal); }
+.resp-label.llm  { background: var(--purple-bg); color: var(--purple); }
+.resp-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+.agent-card.a1 { border-top: 2px solid var(--blue);   } .agent-card.a1 .agent-id { color: var(--blue);   }
+.agent-card.a2 { border-top: 2px solid var(--green);  } .agent-card.a2 .agent-id { color: var(--green);  }
+.agent-card.a3 { border-top: 2px solid var(--amber);  } .agent-card.a3 .agent-id { color: var(--amber);  }
+.agent-card.a4 { border-top: 2px solid var(--purple); } .agent-card.a4 .agent-id { color: var(--purple); }
+
+/* ── Timeline / Roadmap ─────────────────────────────────── */
+.roadmap { position: relative; padding-left: 24px; margin-bottom: 16px; }
+.roadmap::before {
+  content: ''; position: absolute; left: 7px; top: 8px;
+  width: 1px; bottom: 8px; background: var(--border2);
+}
+.rm-item { position: relative; margin-bottom: 20px; }
+.rm-dot {
+  position: absolute; left: -24px; top: 5px;
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: var(--bg); display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 700;
+}
+.rm-dot.done { background: var(--green); border-color: var(--green); }
+.rm-dot.active { background: var(--blue-bg); border-color: var(--blue); }
+.rm-dot.pending { }
+.rm-phase { font-size: 10px; font-weight: 600; letter-spacing: .4px; margin-bottom: 4px; }
+.rm-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.rm-items { display: flex; flex-direction: column; gap: 4px; }
+.rm-sub {
+  font-size: 12px; color: var(--muted);
+  display: flex; align-items: center; gap: 6px;
+}
+.rm-sub::before { content: '·'; color: var(--dim); }
+
+/* ── Callout ─────────────────────────────────────────────── */
+.callout {
+  border-radius: var(--r2); padding: 12px 16px;
+  margin-bottom: 14px; display: flex; gap: 10px;
+  border: 1px solid;
+}
+.callout.warn { background: var(--amber-bg); border-color: rgba(245,166,35,.25); }
+.callout.info { background: var(--blue-bg);  border-color: rgba(74,158,255,.25); }
+.callout.ok   { background: var(--green-bg); border-color: rgba(45,212,160,.25); }
+.callout-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.callout-body { font-size: 13px; line-height: 1.6; }
+.callout.warn .callout-body { color: #fcd34d; }
+.callout.info .callout-body { color: #93c5fd; }
+.callout.ok   .callout-body { color: #86efac; }
+.callout-body strong { font-weight: 600; }
+
+/* ── Divider ─────────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 32px 0; }
+
+/* ── Print / export hint ─────────────────────────────────── */
+.top-bar {
+  background: var(--bg1); border-bottom: 1px solid var(--border);
+  padding: 8px 20px; display: flex; align-items: center;
+  justify-content: space-between; position: sticky; top: 0; z-index: 100;
+}
+.top-bar .breadcrumb { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.top-bar .breadcrumb span { color: var(--dim); }
+.top-actions { display: flex; gap: 8px; }
+.btn {
+  padding: 5px 12px; border-radius: 5px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg2); color: var(--muted);
+  font-family: inherit; transition: all .15s;
+}
+.btn:hover { background: var(--bg3); color: var(--text); }
+.btn.pri { background: var(--blue-bg); color: var(--blue); border-color: rgba(74,158,255,.3); }
+.btn.pri:hover { background: var(--blue); color: #000; }
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+@media (max-width: 860px) {
+  .sidebar { display: none; }
+  .main { padding: 24px 20px; }
+  .card-grid, .agent-grid { grid-template-columns: 1fr; }
+  .card-grid-3 { grid-template-columns: 1fr 1fr; }
+  .flow { flex-direction: column; }
+  .flow-step + .flow-step { margin-left: 0; margin-top: 28px; }
+  .flow-step + .flow-step::before { content: '↓'; left: 50%; top: -22px; transform: translateX(-50%); }
+}
+</style>
+</head>
+<body>
+<div style="max-width:1180px;margin:18px auto 0;padding:14px 18px;border:1px solid #7f1d1d;background:#2a1215;color:#fecaca;border-radius:8px;font-size:14px;line-height:1.7">
+  <strong>内网执行口径已更新：</strong>本文档中的 SQLite 初始化、Python 离线包安装、固定接口 fetch 等内容属于早期方案说明，不作为当前内网操作依据。请以 <code>README.md</code> 和 <code>docs/内网RPA操作清单.md</code> 为准：内网不下载依赖，默认不建库，接口未知时先进入 RPA 发现/Excel/PDF 下载模式。
+</div>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <div class="breadcrumb">
+    南方电网广州供电局
+    <span>›</span> 智能体竞赛
+    <span>›</span> 低压台区规划智能体系统
+  </div>
+  <div class="top-actions">
+    <button class="btn" onclick="window.print()">打印 / 导出 PDF</button>
+    <button class="btn pri" onclick="document.getElementById('s-impl').scrollIntoView({behavior:'smooth'})">查看实施方案 →</button>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="proj">CSG · 智能体竞赛</div>
+    <div class="name">低压台区规划智能体</div>
+    <div class="ver">方案文档 v1.1 · 2024</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">概述</div>
+    <a class="nav-item active" onclick="goto('s-overview')">
+      <div class="nav-dot" style="background:var(--blue)"></div>项目背景
+    </a>
+    <a class="nav-item" onclick="goto('s-arch')">
+      <div class="nav-dot" style="background:var(--green)"></div>系统架构
+    </a>
+    <a class="nav-item" onclick="goto('s-data')">
+      <div class="nav-dot" style="background:var(--teal)"></div>数据采集层
+    </a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">智能体</div>
+    <a class="nav-item" onclick="goto('s-agents')">
+      <div class="nav-dot" style="background:var(--purple)"></div>多智能体设计
+    </a>
+    <a class="nav-item" onclick="goto('s-sim')">
+      <div class="nav-dot" style="background:var(--amber)"></div>仿真校验
+    </a>
+    <a class="nav-item" onclick="goto('s-llm')">
+      <div class="nav-dot" style="background:var(--coral)"></div>LLM 使用策略
+    </a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">工程</div>
+    <a class="nav-item" onclick="goto('s-tech')">
+      <div class="nav-dot" style="background:var(--blue)"></div>技术选型
+    </a>
+    <a class="nav-item" onclick="goto('s-intranet')">
+      <div class="nav-dot" style="background:var(--amber)"></div>内网部署
+    </a>
+    <a class="nav-item" onclick="goto('s-impl')">
+      <div class="nav-dot" style="background:var(--green)"></div>实施路线图
+    </a>
+    <a class="nav-item" onclick="goto('s-tbd')">
+      <div class="nav-dot" style="background:var(--coral)"></div>待确认事项
+    </a>
+  </div>
+</nav>
+
+<!-- Main -->
+<main class="main">
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 1. 项目背景 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-overview">
+  <div class="hero-tag">南方电网广州供电局 · 智能体竞赛</div>
+  <h1>低压台区规划智能体系统</h1>
+  <p class="hero-sub">
+    构建一套面向低压台区布点规划的全流程智能体工作流：从多系统自动化数据采集，到问题识别、负荷预测、布点方案生成、仿真校验、投资评估，最终输出最优规划方案报告，大幅减少规划人员重复作业量。
+  </p>
+
+  <div class="meta-row">
+    <div class="meta-item">
+      <div class="meta-label">运行环境</div>
+      <div class="meta-val">南方电网内网 · Windows</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">LLM 接口</div>
+      <div class="meta-val">内网 DeepSeek R1 / Qwen</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">封装方式</div>
+      <div class="meta-val">Electron 桌面应用</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">问题范围</div>
+      <div class="meta-val">台区重过载 · 低电压</div>
+    </div>
+  </div>
+
+  <div class="card-grid-3">
+    <div class="stat-card blue">
+      <div class="stat-label">数据来源系统</div>
+      <div class="stat-val">5</div>
+      <div class="stat-desc">GIS · 资产 · 计量 · 营销 · 电压监测</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">智能体数量</div>
+      <div class="stat-val">4</div>
+      <div class="stat-desc">预测 · 布点 · 仿真 · 评估</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-label">输出成果</div>
+      <div class="stat-val">4</div>
+      <div class="stat-desc">问题库 · 方案表 · 线路图 · 报告</div>
+    </div>
+  </div>
+
+  <h2>核心设计原则</h2>
+
+  <div class="card">
+    <div class="card-grid">
+      <div>
+        <h3>📐 代码做计算，LLM 做解释</h3>
+        <p>所有数值计算（负荷预测、潮流仿真、投资评分）由 Python 确定性代码完成。LLM 只负责读取结构化结果，生成面向人员的文字说明。彻底规避弱模型计算出错的问题。</p>
+      </div>
+      <div>
+        <h3>🔒 规则做过滤，模型做描述</h3>
+        <p>布点约束（距离范围、禁建区域）由代码强制过滤；接线方案建议文字、投资策略匹配由 LLM 参与。关键判断有规则兜底，LLM 不可用时系统自动降级。</p>
+      </div>
+      <div>
+        <h3>🖱️ 自动为主，人工兜底</h3>
+        <p>每个关键节点（布点位置、接线方式）保留人工拖拽修正入口。AI 提供 Top3 建议，规划人员确认后流转，不替代专业判断。</p>
+      </div>
+      <div>
+        <h3>🏢 全程内网离线</h3>
+        <p>数据存储在本地 SQLite，嵌入模型本地运行，地图使用离线瓦片包。仅 LLM 推理依赖内网 API；API 不可用时降级为纯计算模式，不中断流程。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 2. 系统架构 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-arch">
+  <h2>系统架构</h2>
+
+  <div class="flow">
+    <div class="flow-step blue">
+      <div class="flow-num">LAYER 1</div>
+      <div class="flow-title">数据采集</div>
+      <div class="flow-desc">RPA 定时爬取<br>5个内网系统<br>增量 + 按日</div>
+    </div>
+    <div class="flow-step teal">
+      <div class="flow-num">LAYER 2</div>
+      <div class="flow-title">持久化 + 问题识别</div>
+      <div class="flow-desc">SQLite 本地存储<br>规则判定<br>问题库生成</div>
+    </div>
+    <div class="flow-step purple">
+      <div class="flow-num">LAYER 3</div>
+      <div class="flow-title">多智能体协作</div>
+      <div class="flow-desc">预测→布点→仿真→评估<br>Python计算+LLM解读<br>链式传递结果</div>
+    </div>
+    <div class="flow-step amber">
+      <div class="flow-num">LAYER 4</div>
+      <div class="flow-title">人工审核</div>
+      <div class="flow-desc">地图可视化<br>拖拽修正<br>方案确认</div>
+    </div>
+    <div class="flow-step green">
+      <div class="flow-num">LAYER 5</div>
+      <div class="flow-title">输出</div>
+      <div class="flow-desc">问题库 Excel<br>规划方案表<br>线路图 + 报告</div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:12px">进程通信架构</h3>
+  <div class="code-block"><pre><span class="cm">// Electron 三层通信链路</span>
+
+Vue 渲染进程
+  ↓ <span class="kw">ipcRenderer.invoke()</span>       <span class="cm">// 触发计算 / 爬取 / LLM</span>
+Electron 主进程（IPC 总线）
+  ↓ <span class="kw">child_process.spawn()</span>     <span class="cm">// 调用 Python 计算引擎</span>
+Python 脚本（stdout JSON）    <span class="cm">// 纯标准库，零额外安装</span>
+  ↓ <span class="kw">fetch()</span>（主进程发出）      <span class="cm">// 绕过 CORS，直接调内网接口</span>
+内网 LLM API                  <span class="cm">// DeepSeek R1 / Qwen</span></pre></div>
+
+  <div class="callout info">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <strong>关键设计：所有数据库操作由 Python 负责。</strong>Python 标准库内置 sqlite3，零额外安装。Electron 主进程不直接操作数据库，彻底避免 better-sqlite3 等原生模块在内网的编译问题。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 3. 数据采集层 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-data">
+  <h2>数据采集层（RPA）</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>系统</th><th>数据内容</th><th>频率</th><th>策略</th><th>优先级</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>计量自动化</strong></td>
+          <td>台区日负载率、分时负荷曲线</td>
+          <td>每日</td>
+          <td>增量（只拉取新增日期）</td>
+          <td><span class="tag blue">P0</span></td>
+        </tr>
+        <tr>
+          <td><strong>GIS 设备中心</strong></td>
+          <td>台区经纬度、供电范围、线路拓扑</td>
+          <td>每周</td>
+          <td>全量（台区数量稳定）</td>
+          <td><span class="tag blue">P0</span></td>
+        </tr>
+        <tr>
+          <td><strong>电网管理平台</strong></td>
+          <td>资产台账：配变容量、线路型号、投运年份</td>
+          <td>每周</td>
+          <td>全量 diff</td>
+          <td><span class="tag blue">P0</span></td>
+        </tr>
+        <tr>
+          <td><strong>营销系统</strong></td>
+          <td>报装负荷：已报装容量、意向报装、用户类型</td>
+          <td>每日</td>
+          <td>增量</td>
+          <td><span class="tag green">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>电压监测系统</strong></td>
+          <td>低电压事件：电压值、发生时间、持续时长</td>
+          <td>每日</td>
+          <td>增量</td>
+          <td><span class="tag green">P1</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-bottom:12px">数据内存管理策略</h3>
+  <div class="card">
+    <div class="card-grid">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--teal);margin-bottom:6px">负荷数据滚动窗口</div>
+        <p style="font-size:12px">近 2 年保留日粒度数据；更早的自动聚合为月均值并删除细粒度记录。每月执行一次压缩，PRAGMA vacuum 回收空间。</p>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:6px">增量爬取逻辑</div>
+        <p style="font-size:12px">每次爬取前读取 last_sync_date，只拉取新增数据。UPSERT 写入（主键冲突则更新），避免重复数据。</p>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:6px">RPA Preload 标准模式</div>
+        <p style="font-size:12px">监听 IPC 事件 → 等待页面就绪 → 抓包确认接口 → fetch 调接口 → JSON 写 SQLite → 通知完成。</p>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--coral);margin-bottom:6px">非标浏览器应对</div>
+        <p style="font-size:12px">内网自研浏览器优先找数据 API；无接口时读 DOM 表格；有签名时复用页面已有签名函数；HttpOnly Cookie 改用 Electron session API 读取。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 4. 多智能体设计 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-agents">
+  <h2>多智能体设计</h2>
+
+  <p>四个智能体链式工作，每个智能体的输出作为下一个的输入。<strong>Python 负责所有计算，LLM 只负责文字。</strong></p>
+
+  <div class="agent-grid">
+    <div class="agent-card a1">
+      <div class="agent-id">AGENT 01 · 负荷预测</div>
+      <div class="agent-title">判定是否需要新建台区</div>
+      <div class="resp-row">
+        <span class="resp-label code">代码</span>
+        <span class="resp-text">年均增长率 × N年 + 报装负荷（含折算系数）= 预测总负荷，计算届时负载率</span>
+      </div>
+      <div class="resp-row">
+        <span class="resp-label code">代码</span>
+        <span class="resp-text">负载率 &gt; 80% → 标记需新建，输出建议分割比例</span>
+      </div>
+      <div class="resp-row">
+        <span class="resp-label llm">LLM</span>
+        <span class="resp-text">解读预测结论，100 字以内，面向基层班组通俗描述</span>
+      </div>
+    </div>
+
+    <div class="agent-card a2">
+      <div class="agent-id">AGENT 02 · 布点方案</div>
+      <div class="agent-title">推荐 Top3 候选新建位置</div>
+      <div class="resp-row">
+        <span class="resp-label code">代码</span>
+        <span class="resp-text">GIS 空间筛选（200-500m 半径）+ 硬约束过滤（禁建区、最近距离）</span>
+      </div>
+      <div class="resp-row">
+        <span class="resp-label code">代码</span>
+        <span class="resp-text">综合评分排序（距离 40% + 均衡 30% + 费用 30%）→ Top3</span>
+      </div>
+      <div class="resp-row">
+        <span class="resp-label llm">LLM</span>
+        <span class="resp-text">读取候选点信息，建议 π接 / T接 及理由，描述接火解火位置</span>
+      </div>
+    </div>
+
+    <div class="agent-card a3">
+      <div class="agent-id">AGENT 03 · 仿真校验</div>
+      <div class="agent-title">验证方案电气合规性</div>
+      <div class="resp-row">
+        <span class="resp-label code">代码</span>
+        <span class="resp-text">前推回代法（或静态查表过渡）计算各节点电压偏差、各线段负载率</span>
+      </div>
+      <div class="resp-row">
+        <span class="resp-label code">代码</span>
+        <span class="resp-text">判断 π接 vs T接 是否满足：负载率 &lt; 80%，电压偏差 &lt; ±7%</span>
+      </div>
+      <div class="resp-row">
+        <span class="resp-label llm">LLM</span>
+        <span class="resp-text">读计算结果 JSON，指出越限节点，给出修改建议</span>
+      </div>
+    </div>
+
+    <div class="agent-card a4">
+      <div class="agent-id">AGENT 04 · 投资评估</div>
+      <div class="agent-title">多方案技术经济比选</div>
+      <div class="resp-row">
+        <span class="resp-label code">代码</span>
+        <span class="resp-text">技术指标（电压改善 30%、负载改善 25%、供电可靠性 20%、均衡度 25%）× 权重评分</span>
+      </div>
+      <div class="resp-row">
+        <span class="resp-label code">代码</span>
+        <span class="resp-text">经济指标（建设投资 40%、回收期 35%、单位费用 25%）× 权重评分</span>
+      </div>
+      <div class="resp-row">
+        <span class="resp-label llm">LLM</span>
+        <span class="resp-text">生成最优方案推荐报告（150 字），结合知识库检索的投资策略</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px">π接 vs T接 判断规则</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>接线方式</th><th>适用场景</th><th>仿真拓扑变化</th><th>代码判断条件</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tag blue">π接</span></td>
+          <td>原线路负载率 &gt; 70%，或末端电压偏差 &gt; 5%</td>
+          <td>原线路切断，新台串入中间，两段独立供电</td>
+          <td>current_load_rate &gt; 70</td>
+        </tr>
+        <tr>
+          <td><span class="tag green">T接</span></td>
+          <td>原线路较轻（&lt;50%），新增负荷占比 &lt; 30%</td>
+          <td>原线路不断，新台以分支挂接，主线不卸载</td>
+          <td>current_load_rate &lt;= 50 且 dist_m &gt; 300</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 5. 仿真校验 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-sim">
+  <h2>仿真校验方案</h2>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-body">
+      <strong>待确认：</strong>仿真路线尚未确定。提供两个方案，可根据 GIS 数据格式和时间节点选择。当前代码已实现<strong>静态查表法（过渡方案）</strong>，完整前推回代法框架已预留。
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:11px;font-weight:700;color:var(--amber);margin-bottom:8px">方案 A · 静态查表法（当前实现）</div>
+      <h3>适合快速验证，工程估算精度</h3>
+      <p style="font-size:12px">基于导线型号查额定载流量，用电流公式估算负载率；用线路电阻×电流估算电压降。不需要完整拓扑数据。</p>
+      <p style="font-size:12px"><strong>所需数据：</strong>导线型号、线路长度、预测负荷。</p>
+      <p style="font-size:12px"><strong>精度：</strong>工程估算级，约 ±15%，可用于方案初筛。</p>
+      <div style="margin-top:8px"><span class="tag green">已实现</span> <span class="tag dim">simulate.py</span></div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px">方案 B · 前推回代法（完整实现，TBD）</div>
+      <h3>工程级精度，需要完整拓扑</h3>
+      <p style="font-size:12px">辐射状配网前推回代法：回代累加支路电流，前推计算各节点电压。迭代 3-5 次收敛。</p>
+      <p style="font-size:12px"><strong>所需数据：</strong>节点拓扑（节点+线路）、各台区负荷、线路电阻。<strong>依赖 GIS 数据格式确认。</strong></p>
+      <p style="font-size:12px"><strong>精度：</strong>工程计算级，满足规划要求。</p>
+      <div style="margin-top:8px"><span class="tag amber">框架预留</span> <span class="tag dim">待 GIS 格式确认</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px">导线参数内置查表（已实现）</h3>
+  <div class="code-block"><pre>WIRE_PARAMS = {
+    <span class="st">'LGJ-16'</span>:  {<span class="st">'r_ohm_per_km'</span>: <span class="nu">1.910</span>, <span class="st">'rated_a'</span>: <span class="nu">80</span>},
+    <span class="st">'LGJ-35'</span>:  {<span class="st">'r_ohm_per_km'</span>: <span class="nu">0.850</span>, <span class="st">'rated_a'</span>: <span class="nu">130</span>},
+    <span class="st">'LGJ-70'</span>:  {<span class="st">'r_ohm_per_km'</span>: <span class="nu">0.430</span>, <span class="st">'rated_a'</span>: <span class="nu">210</span>},  <span class="cm"># 最常见</span>
+    <span class="st">'LGJ-95'</span>:  {<span class="st">'r_ohm_per_km'</span>: <span class="nu">0.310</span>, <span class="st">'rated_a'</span>: <span class="nu">260</span>},
+    <span class="st">'LGJ-120'</span>: {<span class="st">'r_ohm_per_km'</span>: <span class="nu">0.250</span>, <span class="st">'rated_a'</span>: <span class="nu">305</span>},
+    <span class="cm"># 电缆型号同理...</span>
+}
+POWER_FACTOR = <span class="nu">0.85</span>  <span class="cm"># 低压配网经验值</span>
+RATED_VOLTAGE = <span class="nu">220</span>  <span class="cm"># 单相标称电压（V）</span></pre></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 6. LLM 使用策略 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-llm">
+  <h2>LLM 使用策略（针对弱模型优化）</h2>
+
+  <div class="callout info">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      内网 LLM（DeepSeek R1 / Qwen）适合基础文字生成，<strong>不适合复杂数值计算和多步推理</strong>。本系统的设计原则是：把 LLM 当"写手"，不当"计算器"。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:12px">正确 vs 错误的 Prompt 设计</h3>
+    <div class="card-grid">
+      <div>
+        <div style="font-size:11px;color:var(--coral);font-weight:600;margin-bottom:8px">❌ 错误：让 LLM 计算</div>
+        <div class="code-block" style="font-size:11px"><pre>"台区A负荷120kW，增长率2%，
+5年后负荷是多少？是否需要
+新建台区？"</pre></div>
+        <p style="font-size:11px">问题：弱模型可能算错，且无法验证。</p>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:8px">✅ 正确：代码算完再给 LLM</div>
+        <div class="code-block" style="font-size:11px"><pre>"计算结果：当前负载率75%，
+5年预测负载率92.5%，超过80%
+预警线，建议新建台区。
+请用100字通俗描述原因。"</pre></div>
+        <p style="font-size:11px">LLM 只做解释，结果由代码保证。</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px">System Prompt 核心内容（所有智能体共用）</h3>
+  <div class="code-block"><pre><span class="cm">你是南方电网配网规划助手。职责：根据系统提供的计算结果生成简洁规划建议。</span>
+
+<span class="cm">背景知识：</span>
+- 重过载：台区配变负载率（负荷/容量×100%）超过 80%
+- 低电压：用户端电压偏差低于标称电压（220V）的 -7%，即低于 204.6V
+- π接：在现有线路切断，新台区串联接入，形成两段独立供电
+- T接：在现有线路节点引出分支，新台区并联接入，原线路不断
+
+<span class="cm">注意：所有数值已由系统计算完成，请勿自行计算或修改数字。</span></pre></div>
+
+  <h3 style="margin-bottom:10px">LLM 不可用时的降级策略</h3>
+  <div class="code-block"><pre><span class="cm">// electron/index.ts - LLM 调用失败时自动降级</span>
+<span class="kw">try</span> {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(llmUrl, { signal: AbortSignal.timeout(<span class="nu">30_000</span>) })
+  <span class="kw">return</span> { success: <span class="kw">true</span>, text: data.choices[<span class="nu">0</span>].message.content }
+} <span class="kw">catch</span> {
+  <span class="cm">// 降级：返回兜底文字，不中断流程</span>
+  <span class="kw">return</span> { success: <span class="kw">false</span>, text: <span class="st">'[LLM 暂不可用，计算结果见上方数据]'</span> }
+}</pre></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 7. 技术选型 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-tech">
+  <h2>技术选型</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>层次</th><th>技术</th><th>理由</th><th>内网安装方式</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tag dim">桌面壳</span></td>
+          <td><strong>Electron 29</strong></td>
+          <td>复用现有 RPA 工具经验；访问 Node.js API；Cookie 注入</td>
+          <td>含在 node_modules，整体打包带入</td>
+        </tr>
+        <tr>
+          <td><span class="tag dim">前端框架</span></td>
+          <td><strong>Vue 3 + TypeScript</strong></td>
+          <td>与现有工具一致，复用组件</td>
+          <td>同上</td>
+        </tr>
+        <tr>
+          <td><span class="tag dim">UI 组件</span></td>
+          <td><strong>Element Plus</strong></td>
+          <td>成熟的表单/表格组件</td>
+          <td>同上</td>
+        </tr>
+        <tr>
+          <td><span class="tag dim">数据库</span></td>
+          <td><strong>SQLite（Python 标准库）</strong></td>
+          <td>零额外安装；Python 内置 sqlite3；避免原生模块编译</td>
+          <td>Python 自带，无需安装</td>
+        </tr>
+        <tr>
+          <td><span class="tag dim">计算引擎</span></td>
+          <td><strong>Python 3.10</strong></td>
+          <td>数值计算、GIS 距离计算、Excel 读写</td>
+          <td>内网已有 / embeddable 版（8MB）</td>
+        </tr>
+        <tr>
+          <td><span class="tag dim">GIS 计算</span></td>
+          <td><strong>geopy</strong>（Python）</td>
+          <td>Haversine 距离计算，轻量（1MB）</td>
+          <td>whl 文件离线安装</td>
+        </tr>
+        <tr>
+          <td><span class="tag dim">Excel 读写</span></td>
+          <td><strong>openpyxl</strong>（Python）</td>
+          <td>读取现有业务模板，输出规划方案表</td>
+          <td>whl 文件离线安装（5MB）</td>
+        </tr>
+        <tr>
+          <td><span class="tag dim">地图</span></td>
+          <td><strong>Leaflet.js + 离线瓦片</strong></td>
+          <td>轻量，支持离线地图包（mbtiles）</td>
+          <td>含在 node_modules；瓦片包单独带入</td>
+        </tr>
+        <tr>
+          <td><span class="tag dim">图表</span></td>
+          <td><strong>ECharts 5</strong></td>
+          <td>负荷曲线、评分雷达图</td>
+          <td>含在 node_modules</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout ok">
+    <div class="callout-icon">✅</div>
+    <div class="callout-body">
+      <strong>无原生模块依赖。</strong>所有 npm 包均为纯 JavaScript，不包含 C++ 原生模块（已移除 better-sqlite3）。在外网 <code>npm install</code> 后，整个 node_modules 文件夹可以直接打包带入内网使用，不需要在内网重新安装。
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 8. 内网部署 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-intranet">
+  <h2>内外网协同部署</h2>
+
+  <div class="callout info">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <strong>核心逻辑：外网装好，整体搬入，内网直接用。</strong>不是在内网重新安装，是把外网已经安装好的环境完整复制进去。
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:12px">外网操作（一次性，带入内网的文件）</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>需要带入的文件</th><th>获取方式</th><th>大小参考</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>ts-agent-full.zip</strong>（含 node_modules）</td>
+          <td>外网 npm install 后，整个项目文件夹打包</td>
+          <td>~600 MB</td>
+        </tr>
+        <tr>
+          <td><strong>geopy .whl 文件</strong></td>
+          <td>pip download geopy --platform win_amd64 --python-version 310 --only-binary=:all:</td>
+          <td>~1 MB</td>
+        </tr>
+        <tr>
+          <td><strong>openpyxl .whl 文件</strong></td>
+          <td>同上，openpyxl</td>
+          <td>~5 MB</td>
+        </tr>
+        <tr>
+          <td><strong>pandas + numpy .whl</strong>（可选）</td>
+          <td>同上，pandas numpy（数据分析用）</td>
+          <td>~35 MB</td>
+        </tr>
+        <tr>
+          <td><strong>Python embeddable 包</strong>（如内网无 Python）</td>
+          <td>python.org 下载 python-3.10.x-embed-amd64.zip</td>
+          <td>~8 MB</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-bottom:12px">内网操作顺序</h3>
+  <div class="code-block"><pre><span class="cm"># 1. 解压项目（node_modules 已在其中，不需要 npm install）</span>
+Expand-Archive ts-agent-full.zip -DestinationPath C:\work\
+
+<span class="cm"># 2. 验证 Node.js（版本必须与外网一致）</span>
+node -v
+
+<span class="cm"># 3. 验证 Python 标准库（无需安装，Python 内置）</span>
+python -c <span class="st">"import sqlite3, json, os, math; print('OK')"</span>
+
+<span class="cm"># 4. 安装 Python 离线包（每个 whl 文件单独传入，单独安装）</span>
+pip install --no-index D:\whl\geopy-2.4.1-py3-none-any.whl
+pip install --no-index D:\whl\openpyxl-3.1.2-py2.py3-none-any.whl
+
+<span class="cm"># 5. 初始化数据库</span>
+cd C:\work\ts-agent
+echo {"db_path": "C:/ts-agent-data/ts_agent.db"} | python python\db_init.py
+
+<span class="cm"># 6. 运行</span>
+npm run dev   <span class="cm"># 开发调试模式</span></pre></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 9. 实施路线图 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-impl">
+  <h2>实施路线图</h2>
+
+  <div class="callout ok">
+    <div class="callout-icon">✅</div>
+    <div class="callout-body">
+      <strong>每个阶段结束都有独立可演示成果。</strong>界面在阶段3之后才开始，确保数据结构稳定不返工。
+    </div>
+  </div>
+
+  <div class="roadmap">
+    <div class="rm-item">
+      <div class="rm-dot active">0</div>
+      <div class="rm-phase" style="color:var(--blue)">阶段0 · 第1周</div>
+      <div class="rm-title">骨架搭建 + 环境验证</div>
+      <div class="rm-items">
+        <div class="rm-sub">外网：npm install，整体打包</div>
+        <div class="rm-sub">内网：解压验证，Python 标准库测试</div>
+        <div class="rm-sub">数据库初始化，Python 引擎通信测试</div>
+        <div class="rm-sub">LLM API 连通测试</div>
+        <div class="rm-sub"><span class="tag green" style="font-size:10px">交付</span> 能从 Electron 调 Python 并返回 JSON</div>
+      </div>
+    </div>
+
+    <div class="rm-item">
+      <div class="rm-dot pending">1</div>
+      <div class="rm-phase" style="color:var(--teal)">阶段1 · 第2-3周</div>
+      <div class="rm-title">RPA 数据采集 + 问题库</div>
+      <div class="rm-items">
+        <div class="rm-sub">内网抓包：计量自动化、GIS（优先）</div>
+        <div class="rm-sub">填写 Preload TODO，验证数据入库</div>
+        <div class="rm-sub">problem_scan.py 扫描问题台区</div>
+        <div class="rm-sub">知识库文档导入（规章制度向量化，可选）</div>
+        <div class="rm-sub"><span class="tag green" style="font-size:10px">交付</span> 自动生成问题库，可导出 Excel</div>
+      </div>
+    </div>
+
+    <div class="rm-item">
+      <div class="rm-dot pending">2</div>
+      <div class="rm-phase" style="color:var(--purple)">阶段2 · 第4-5周</div>
+      <div class="rm-title">负荷预测 + 布点方案</div>
+      <div class="rm-items">
+        <div class="rm-sub">forecast.py 连接真实数据验证</div>
+        <div class="rm-sub">layout.py 空间计算（需确认 GIS 坐标系）</div>
+        <div class="rm-sub">LLM 调用封装（π接/T接 方案文字）</div>
+        <div class="rm-sub">规划方案表 Excel 输出</div>
+        <div class="rm-sub"><span class="tag green" style="font-size:10px">交付</span> 指定台区，自动出 Top3 候选点和方案文字</div>
+      </div>
+    </div>
+
+    <div class="rm-item">
+      <div class="rm-dot pending">3</div>
+      <div class="rm-phase" style="color:var(--amber)">阶段3 · 第6-7周</div>
+      <div class="rm-title">仿真校验 + 投资评估（+ 开始写界面）</div>
+      <div class="rm-items">
+        <div class="rm-sub">simulate.py 静态估算版验证</div>
+        <div class="rm-sub">前推回代法（待 GIS 数据格式确认）</div>
+        <div class="rm-sub">evaluate.py 技术经济评分</div>
+        <div class="rm-sub"><strong>→ 此时开始写 Vue 界面</strong>（数据结构已稳定）</div>
+        <div class="rm-sub"><span class="tag green" style="font-size:10px">交付</span> 全流程数据链路跑通，出评分排名</div>
+      </div>
+    </div>
+
+    <div class="rm-item">
+      <div class="rm-dot pending">4</div>
+      <div class="rm-phase" style="color:var(--green)">阶段4 · 第8-9周</div>
+      <div class="rm-title">界面完善 + 完整输出 + 联调</div>
+      <div class="rm-items">
+        <div class="rm-sub">地图可视化（Leaflet + 候选点 + 线路图层）</div>
+        <div class="rm-sub">SVG 线路修改前后对比图</div>
+        <div class="rm-sub">人工审核：拖拽修正、π/T切换、触发重算</div>
+        <div class="rm-sub">最优方案报告 PDF/Word 输出</div>
+        <div class="rm-sub">完整流程联调，2-3 个典型台区 Demo</div>
+        <div class="rm-sub"><span class="tag blue" style="font-size:10px">竞赛演示</span> 全流程可现场运行</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 10. 待确认事项 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s-tbd">
+  <h2>待确认事项</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>问题</th><th>影响</th><th>优先级</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--dim)">Q1</td>
+          <td><strong>GIS 数据格式</strong>：经纬度字段名？坐标系是 WGS84 还是 GCJ02（火星坐标）？导线拓扑是否在 GIS 中有完整记录？</td>
+          <td>直接影响布点算法和仿真建模，坐标系错误会导致 300-500m 位置偏差</td>
+          <td><span class="tag coral">P0 · 阶段1</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--dim)">Q2</td>
+          <td><strong>仿真路线</strong>：自研前推回代法，还是对接现有仿真工具（一模到底工具是否有可调用接口）？</td>
+          <td>影响阶段3的工作量和精度</td>
+          <td><span class="tag coral">P0 · 阶段2</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--dim)">Q3</td>
+          <td><strong>竞赛时间节点</strong>：截止日期？演示形式（现场跑流程 / PPT / 录屏）？</td>
+          <td>决定哪些功能做深、哪些做展示层</td>
+          <td><span class="tag coral">P0</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--dim)">Q4</td>
+          <td><strong>各系统接口格式</strong>：抓包后各系统的鉴权方式（Cookie/Header）、接口 URL、返回体字段名</td>
+          <td>Preload 脚本的 TODO 填写，RPA 是否跑通</td>
+          <td><span class="tag amber">P0 · 内网调试时</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--dim)">Q5</td>
+          <td><strong>投资评估定额</strong>：建设费用估算是否有内部标准定额（元/m、元/kVA）？</td>
+          <td>影响经济指标计算精度</td>
+          <td><span class="tag green">P1 · 阶段3</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--dim)">Q6</td>
+          <td><strong>现有模板字段</strong>：规划方案表、问题库的现有 Excel 模板完整字段清单</td>
+          <td>输出格式对齐</td>
+          <td><span class="tag green">P1 · 阶段2</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--dim)">Q7</td>
+          <td><strong>约束条件列表</strong>：一模到底工具的完整约束条件，用于分类（硬约束/软约束/语义约束）</td>
+          <td>影响布点方案生成的合规性</td>
+          <td><span class="tag green">P1 · 阶段2</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+  <p style="font-size:12px;color:var(--dim);text-align:center">
+    低压台区规划智能体系统 · 方案文档 v1.1 · 南方电网广州供电局 · 内部资料
+  </p>
+</div>
+
+</main>
+</div>
+
+<script>
+// Sidebar navigation
+const goto = (id) => {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+};
+
+// Active nav on scroll
+const sections = ['s-overview','s-arch','s-data','s-agents','s-sim','s-llm','s-tech','s-intranet','s-impl','s-tbd'];
+const navItems = document.querySelectorAll('.nav-item');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navItems.forEach(n => n.classList.remove('active'));
+      const idx = sections.indexOf(entry.target.id);
+      if (idx >= 0 && navItems[idx]) navItems[idx].classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+
+sections.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) observer.observe(el);
+});
+
+// Make nav items clickable
+navItems.forEach((item, i) => {
+  item.style.cursor = 'pointer';
+  item.addEventListener('click', () => {
+    document.getElementById(sections[i])?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
+</body>
+</html>

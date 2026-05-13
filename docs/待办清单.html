@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>内网 RPA 交互操作清单</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #687386;
+      --line: #d9dee8;
+      --blue: #2563eb;
+      --green: #059669;
+      --red: #dc2626;
+      --amber: #d97706;
+      --shadow: 0 8px 22px rgba(18, 31, 55, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(246,247,249,.95);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(8px);
+    }
+    .wrap { max-width: 1160px; margin: 0 auto; padding: 20px; }
+    .top { display: flex; gap: 18px; align-items: flex-start; justify-content: space-between; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    p { line-height: 1.7; }
+    .sub { margin: 0; color: var(--muted); }
+    .bar {
+      width: 280px;
+      padding: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+    .meter { height: 9px; overflow: hidden; background: #e5e7eb; border-radius: 999px; }
+    .meter span { display: block; width: 0; height: 100%; background: var(--green); transition: width .2s; }
+    .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    button, .seg button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { border-color: #9aa5b8; }
+    button.primary { background: var(--blue); border-color: var(--blue); color: white; }
+    .seg button.active { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+    main.wrap { display: grid; grid-template-columns: 260px 1fr; gap: 18px; }
+    aside {
+      position: sticky;
+      top: 116px;
+      align-self: start;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .nav button { display: block; width: 100%; margin-bottom: 8px; text-align: left; }
+    section {
+      margin-bottom: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    h2 {
+      margin: 0;
+      padding: 16px 18px;
+      font-size: 19px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfe;
+    }
+    .task {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 10px;
+      padding: 14px 18px;
+      border-bottom: 1px solid #eef1f6;
+    }
+    .task:last-child { border-bottom: 0; }
+    .task.done .title { text-decoration: line-through; color: var(--muted); }
+    input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; }
+    .title { font-weight: 700; margin-bottom: 4px; }
+    .desc { color: var(--muted); line-height: 1.6; }
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 12px;
+      margin-left: 6px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .tag.red { color: var(--red); border-color: #fecaca; background: #fff1f2; }
+    .tag.green { color: var(--green); border-color: #bbf7d0; background: #ecfdf5; }
+    .tag.amber { color: var(--amber); border-color: #fed7aa; background: #fff7ed; }
+    pre {
+      margin: 10px 0 0;
+      overflow: auto;
+      padding: 12px;
+      background: #111827;
+      color: #f9fafb;
+      border-radius: 6px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .copy { white-space: nowrap; height: 34px; }
+    .danger {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-left: 4px solid var(--red);
+      border-radius: 8px;
+    }
+    .form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 18px;
+    }
+    label { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 10px;
+      font: inherit;
+      color: var(--text);
+      background: white;
+    }
+    textarea { min-height: 74px; resize: vertical; }
+    .full { grid-column: 1 / -1; }
+    .hidden { display: none; }
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #111827;
+      color: white;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all .18s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 860px) {
+      .top { display: block; }
+      .bar { width: 100%; margin-top: 14px; }
+      main.wrap { display: block; }
+      aside { position: static; margin-bottom: 18px; }
+      .task { grid-template-columns: 28px 1fr; }
+      .copy { grid-column: 2; width: fit-content; }
+      .form { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <div>
+      <h1>内网 RPA 交互操作清单</h1>
+      <p class="sub">用于现场调试：先确认环境和数据来源，再决定接口、Excel/PDF 解析和数据库启用。</p>
+      <div class="tools seg" id="filters">
+        <button class="active" data-filter="all">全部</button>
+        <button data-filter="external">外网准备</button>
+        <button data-filter="internal">内网验收</button>
+        <button data-filter="rpa">RPA 发现</button>
+        <button data-filter="db">数据库</button>
+      </div>
+    </div>
+    <div class="bar">
+      <div id="progressText">完成 0 / 0</div>
+      <div class="meter" aria-label="完成进度"><span id="progressBar"></span></div>
+      <div class="tools">
+        <button id="resetBtn">重置勾选</button>
+        <button class="primary" onclick="window.print()">打印 / PDF</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <aside>
+    <div class="danger">
+      <strong>红线：</strong>内网不下载依赖，不执行 npm install / pip install，不在数据格式未知时建库。
+    </div>
+    <div class="nav">
+      <button data-jump="external">外网一次性准备</button>
+      <button data-jump="internal">内网验收</button>
+      <button data-jump="method">推荐流程</button>
+      <button data-jump="rpa">RPA 发现模式</button>
+      <button data-jump="sample">样例登记</button>
+      <button data-jump="db">数据库启用</button>
+    </div>
+  </aside>
+
+  <div>
+    <section data-group="external" id="external">
+      <h2>一、外网一次性准备</h2>
+      <div class="task" data-id="ext-node">
+        <input type="checkbox" />
+        <div>
+          <div class="title">确认外网 Node 版本 <span class="tag red">必须 24.14.1</span></div>
+          <div class="desc">外网安装依赖和构建时必须与内网 Node 对齐，避免 node_modules 版本不匹配。</div>
+          <pre>node -v</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+      <div class="task" data-id="ext-install">
+        <input type="checkbox" />
+        <div>
+          <div class="title">外网安装依赖并构建</div>
+          <div class="desc">只在外网执行。build 已避开旧版 vue-tsc 的 Node 24 兼容问题，内网不要下载升级。</div>
+          <pre>npm install
+npm run build</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+      <div class="task" data-id="ext-pack">
+        <input type="checkbox" />
+        <div>
+          <div class="title">打包完整目录 <span class="tag green">含 node_modules</span></div>
+          <div class="desc">必须包含 node_modules、dist / dist-electron、electron、python、package.json、README.md。</div>
+        </div>
+        <button class="copy hidden">复制</button>
+      </div>
+    </section>
+
+    <section data-group="internal" id="internal">
+      <h2>二、内网验收</h2>
+      <div class="task" data-id="int-node">
+        <input type="checkbox" />
+        <div>
+          <div class="title">确认内网 Node 版本 <span class="tag red">必须 v24.14.1</span></div>
+          <div class="desc">如果版本不一致，先停下，不要在内网 npm install。</div>
+          <pre>node -v</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+      <div class="task" data-id="int-modules">
+        <input type="checkbox" />
+        <div>
+          <div class="title">验证 node_modules 已随包带入</div>
+          <div class="desc">只做 require 检查，不触发下载。</div>
+          <pre>node -e "require('./node_modules/electron-log'); console.log('依赖完整')"</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+      <div class="task" data-id="int-run">
+        <input type="checkbox" />
+        <div>
+          <div class="title">启动开发调试</div>
+          <div class="desc">用于打开主窗口和 RPA 子窗口。</div>
+          <pre>npm run dev</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+    </section>
+
+    <section data-group="rpa" id="method">
+      <h2>三、案例学习后的推荐流程</h2>
+      <div class="task" data-id="method-read">
+        <input type="checkbox" />
+        <div>
+          <div class="title">先读优化方案 <span class="tag green">推荐</span></div>
+          <div class="desc">本项目按“发现 -> 半自动下载 -> 样例解析 -> 入库 -> 定时”推进，不再一开始写死接口或建库。</div>
+          <pre>docs\\RPA流程优化方案.md</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+      <div class="task" data-id="method-register">
+        <input type="checkbox" />
+        <div>
+          <div class="title">维护任务登记表</div>
+          <div class="desc">每个系统都记录当前状态、数据来源、样例文件、字段确认情况和下一步动作。</div>
+          <pre>docs\\rpa-task-register.json</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+      <div class="task" data-id="method-template">
+        <input type="checkbox" />
+        <div>
+          <div class="title">每个系统填写单任务模板</div>
+          <div class="desc">模板用于沉淀 URL、iframe、按钮、查询条件、样例文件和字段映射。</div>
+          <pre>docs\\RPA单任务模板.md</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+    </section>
+
+    <section data-group="rpa" id="rpa">
+      <h2>四、接口取数与 RPA 发现模式</h2>
+      <div class="task" data-id="rpa-config-crawler">
+        <input type="checkbox" />
+        <div>
+          <div class="title">优先填写接口配置 <span class="tag green">推荐</span></div>
+          <div class="desc">按爬虫手册复制 Fetch/XHR 的 URL、Headers/Cookie、Payload，再填写列表路径和字段映射。运行后保存 raw.json、rows.json、rows.xlsx。</div>
+          <pre>docs\\爬虫手册落地方案.md</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+      <div class="task" data-id="rpa-login">
+        <input type="checkbox" />
+        <div>
+          <div class="title">接口无法直连时，手动登录并完成一次查询</div>
+          <div class="desc">先观察系统真实交互：是否分页、是否必须点击导出按钮、查询条件是什么。</div>
+        </div>
+        <button class="copy hidden">复制</button>
+      </div>
+      <div class="task" data-id="int-vuetsc">
+        <input type="checkbox" />
+        <div>
+          <div class="title">如遇 vue-tsc 报 supportedTSExtensions</div>
+          <div class="desc">这是旧版 vue-tsc 与当前 TypeScript/Node 组合不兼容。不要在内网升级包，确认 package.json 的 build 为 vite build && electron-builder。</div>
+          <pre>node -e "console.log(require('./package.json').scripts.build)"</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+      <div class="task" data-id="rpa-trigger">
+        <input type="checkbox" />
+        <div>
+          <div class="title">触发各系统 RPA</div>
+          <div class="desc">如果接口 URL 仍为 TODO，程序会监听请求、扫描页面、寻找导出按钮，并尝试下载 Excel/PDF。</div>
+          <pre>window.ipcApi.crawl('load_meter')
+window.ipcApi.crawl('gis')
+window.ipcApi.crawl('asset')
+window.ipcApi.crawl('marketing')
+window.ipcApi.crawl('voltage')</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+      <div class="task" data-id="rpa-downloads">
+        <input type="checkbox" />
+        <div>
+          <div class="title">检查下载目录 <span class="tag amber">Excel / PDF</span></div>
+          <div class="desc">下载文件会保存到 Electron 用户数据目录下的 rpa-downloads/&lt;system&gt;/。</div>
+        </div>
+        <button class="copy hidden">复制</button>
+      </div>
+    </section>
+
+    <section data-group="rpa" id="sample">
+      <h2>五、样例登记</h2>
+      <div class="form">
+        <label>系统名
+          <select data-form="system">
+            <option>计量 load_meter</option>
+            <option>GIS gis</option>
+            <option>资产 asset</option>
+            <option>营销 marketing</option>
+            <option>电压 voltage</option>
+          </select>
+        </label>
+        <label>采集方式
+          <select data-form="method">
+            <option>点击导出 Excel</option>
+            <option>点击导出 PDF</option>
+            <option>接口 JSON</option>
+            <option>页面表格</option>
+            <option>其他</option>
+          </select>
+        </label>
+        <label>查询条件
+          <input data-form="query" placeholder="日期、台区、组织单位、分页等" />
+        </label>
+        <label>主键字段
+          <input data-form="key" placeholder="台区 ID / 事件 ID / 申请 ID" />
+        </label>
+        <label class="full">关键字段
+          <textarea data-form="fields" placeholder="负载率、电压、容量、坐标、时间、单位等"></textarea>
+        </label>
+        <label class="full">样例路径 / 备注
+          <textarea data-form="note" placeholder="真实下载文件路径、接口响应保存路径、异常说明"></textarea>
+        </label>
+        <div class="full tools">
+          <button id="copySample" class="primary">复制登记内容</button>
+          <button id="clearSample">清空登记</button>
+        </div>
+      </div>
+    </section>
+
+    <section data-group="db" id="db">
+      <h2>六、数据库启用</h2>
+      <div class="task" data-id="db-confirm">
+        <input type="checkbox" />
+        <div>
+          <div class="title">确认字段、主键、增量和覆盖策略</div>
+          <div class="desc">满足后才允许建库。数据格式不确定时不要初始化 SQLite。</div>
+        </div>
+        <button class="copy hidden">复制</button>
+      </div>
+      <div class="task" data-id="db-init">
+        <input type="checkbox" />
+        <div>
+          <div class="title">启用本地数据库 <span class="tag amber">确认后执行</span></div>
+          <div class="desc">只在确认数据格式后执行。</div>
+          <pre>$env:TS_AGENT_ENABLE_LOCAL_DB='1'
+python python\db_init.py</pre>
+        </div>
+        <button class="copy">复制</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="toast" id="toast">已复制</div>
+
+<script>
+const KEY = 'ts-agent-rpa-checklist-v1'
+const FORM_KEY = 'ts-agent-rpa-sample-v1'
+const tasks = Array.from(document.querySelectorAll('.task'))
+const checks = tasks.map(t => t.querySelector('input[type="checkbox"]'))
+const progressText = document.getElementById('progressText')
+const progressBar = document.getElementById('progressBar')
+const toast = document.getElementById('toast')
+
+function loadState() {
+  const saved = JSON.parse(localStorage.getItem(KEY) || '{}')
+  tasks.forEach(task => {
+    const checked = !!saved[task.dataset.id]
+    task.querySelector('input').checked = checked
+    task.classList.toggle('done', checked)
+  })
+  const form = JSON.parse(localStorage.getItem(FORM_KEY) || '{}')
+  document.querySelectorAll('[data-form]').forEach(el => { el.value = form[el.dataset.form] || el.value || '' })
+  updateProgress()
+}
+
+function saveState() {
+  const data = {}
+  tasks.forEach(task => { data[task.dataset.id] = task.querySelector('input').checked })
+  localStorage.setItem(KEY, JSON.stringify(data))
+  updateProgress()
+}
+
+function updateProgress() {
+  const done = checks.filter(c => c.checked).length
+  const total = checks.length
+  progressText.textContent = `完成 ${done} / ${total}`
+  progressBar.style.width = total ? `${Math.round(done / total * 100)}%` : '0%'
+}
+
+function showToast(text = '已复制') {
+  toast.textContent = text
+  toast.classList.add('show')
+  setTimeout(() => toast.classList.remove('show'), 1300)
+}
+
+tasks.forEach(task => {
+  const checkbox = task.querySelector('input')
+  checkbox.addEventListener('change', () => {
+    task.classList.toggle('done', checkbox.checked)
+    saveState()
+  })
+  const copy = task.querySelector('.copy')
+  const pre = task.querySelector('pre')
+  if (copy && pre) {
+    copy.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(pre.innerText)
+      showToast()
+    })
+  }
+})
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('确认重置所有勾选状态？')) return
+  localStorage.removeItem(KEY)
+  loadState()
+})
+
+document.querySelectorAll('[data-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    const filter = btn.dataset.filter
+    document.querySelectorAll('section[data-group]').forEach(sec => {
+      sec.classList.toggle('hidden', filter !== 'all' && sec.dataset.group !== filter)
+    })
+  })
+})
+
+document.querySelectorAll('[data-jump]').forEach(btn => {
+  btn.addEventListener('click', () => document.getElementById(btn.dataset.jump).scrollIntoView({ behavior: 'smooth' }))
+})
+
+document.querySelectorAll('[data-form]').forEach(el => {
+  el.addEventListener('input', () => {
+    const data = {}
+    document.querySelectorAll('[data-form]').forEach(item => { data[item.dataset.form] = item.value })
+    localStorage.setItem(FORM_KEY, JSON.stringify(data))
+  })
+})
+
+document.getElementById('copySample').addEventListener('click', async () => {
+  const get = name => document.querySelector(`[data-form="${name}"]`).value
+  const text = `系统名：${get('system')}
+采集方式：${get('method')}
+查询条件：${get('query')}
+主键字段：${get('key')}
+关键字段：${get('fields')}
+样例路径 / 备注：${get('note')}`
+  await navigator.clipboard.writeText(text)
+  showToast('登记内容已复制')
+})
+
+document.getElementById('clearSample').addEventListener('click', () => {
+  if (!confirm('确认清空样例登记？')) return
+  localStorage.removeItem(FORM_KEY)
+  document.querySelectorAll('[data-form]').forEach(el => {
+    if (el.tagName === 'SELECT') el.selectedIndex = 0
+    else el.value = ''
+  })
+})
+
+loadState()
+</script>
+</body>
+</html>

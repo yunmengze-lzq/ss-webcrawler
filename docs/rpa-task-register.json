@@ -1,0 +1,62 @@
+[
+  {
+    "system": "load_meter",
+    "name": "计量负载率",
+    "priority": 1,
+    "status": "discovery",
+    "domain": "finance",
+    "dataSource": "unknown",
+    "pageUrl": "",
+    "sampleFile": "",
+    "confirmedFields": false,
+    "nextAction": "打开计量系统，手动查询一次，触发发现模式，保存 Excel/PDF 样例"
+  },
+  {
+    "system": "voltage",
+    "name": "电压监测",
+    "priority": 2,
+    "status": "discovery",
+    "domain": "finance",
+    "dataSource": "unknown",
+    "pageUrl": "",
+    "sampleFile": "",
+    "confirmedFields": false,
+    "nextAction": "确认低电压事件是否支持导出，登记事件 ID、台区 ID、最低电压、持续时间字段"
+  },
+  {
+    "system": "asset",
+    "name": "资产台账",
+    "priority": 3,
+    "status": "discovery",
+    "domain": "asset",
+    "dataSource": "unknown",
+    "pageUrl": "",
+    "sampleFile": "",
+    "confirmedFields": false,
+    "nextAction": "确认配变容量、线路型号、线路长度、投运年份是否能导出"
+  },
+  {
+    "system": "gis",
+    "name": "GIS 台区坐标",
+    "priority": 4,
+    "status": "discovery",
+    "domain": "asset",
+    "dataSource": "unknown",
+    "pageUrl": "",
+    "sampleFile": "",
+    "confirmedFields": false,
+    "nextAction": "确认坐标字段、坐标系、台区 ID 是否稳定"
+  },
+  {
+    "system": "marketing",
+    "name": "营销报装",
+    "priority": 5,
+    "status": "discovery",
+    "domain": "finance",
+    "dataSource": "unknown",
+    "pageUrl": "",
+    "sampleFile": "",
+    "confirmedFields": false,
+    "nextAction": "确认报装容量、状态、预计接入时间、关联台区 ID 字段"
+  }
+]
