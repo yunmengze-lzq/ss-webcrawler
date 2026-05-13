@@ -24,3 +24,13 @@ npx vite --config vite.ui.mjs --host 127.0.0.1 --port 5178 --strictPort
 ```
 
 浏览器预览模式只用于查看界面和保存本地示例配置；真实接口请求、Cookie 辅助更新、Excel/SQLite 写入需要 Electron 版。
+
+## 内网运行
+
+内网电脑解压离线包后，双击：
+
+```text
+启动-智能体取数工具.bat
+```
+
+详见 `内网离线运行说明.md`。不要在内网执行 `npm install` 或下载任何依赖。
