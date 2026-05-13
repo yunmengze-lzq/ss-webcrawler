@@ -7,6 +7,8 @@ import { log } from './log/log'
 import { spawnPython } from './pythonBridge'
 import ExcelJS from 'exceljs'
 
+app.setName('ts-agent')
+
 const isDev = !app.isPackaged
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL || 'http://127.0.0.1:5178'
 
