@@ -214,13 +214,58 @@ const filteredConfigs = computed(() => {
 const clone = (config: CrawlerConfig) => JSON.parse(JSON.stringify(config)) as CrawlerConfig
 const normalizeConfig = (config: CrawlerConfig): CrawlerConfig => ({ ...blankConfig(), ...config })
 
+const builtInConfigs = (): CrawlerConfig[] => [
+  normalizeConfig({
+    id: 'real_github_repo_search',
+    name: '真实网站案例-GitHub仓库搜索',
+    system: 'custom',
+    category: '真实网站测试',
+    description: '调用 GitHub 公开搜索 API，搜索 TypeScript 爬虫相关仓库，验证真实网站取数、嵌套字段映射和 Excel 保存。',
+    method: 'GET',
+    url: 'https://api.github.com/search/repositories',
+    headersText: '{\n  "Accept": "application/vnd.github+json",\n  "User-Agent": "ss-webcrawler-test"\n}',
+    cookie: '',
+    cookieRefreshMode: 'manual',
+    cookieExpireHours: 4,
+    cookieUpdatedAt: '',
+    loginUrl: '',
+    payloadText: '{\n  "q": "web crawler language:TypeScript",\n  "sort": "stars",\n  "order": "desc",\n  "per_page": 10\n}',
+    payloadFields: [],
+    paginationEnabled: false,
+    pageField: '',
+    pageSizeField: '',
+    pageSize: 10,
+    totalPath: 'total_count',
+    maxPages: 1,
+    stopMode: 'max-pages',
+    listPath: 'items',
+    fieldsText: '{\n  "仓库名": "full_name",\n  "作者": "owner.login",\n  "地址": "html_url",\n  "描述": "description",\n  "Star数": "stargazers_count",\n  "语言": "language",\n  "更新时间": "updated_at"\n}',
+    storageTarget: 'excel',
+    outputDir: 'C:\\Users\\61081\\Documents\\New project\\output\\real-site-test',
+    databasePath: '',
+    tableName: 'github_repo_search',
+    primaryKey: '仓库名',
+    writeMode: 'append',
+  }),
+]
+
+const withBuiltInConfigs = (items: CrawlerConfig[]) => {
+  const normalized = items.map(normalizeConfig)
+  const existing = new Set(normalized.map(item => item.id))
+  return [
+    ...builtInConfigs().filter(item => !existing.has(item.id)),
+    ...normalized,
+  ]
+}
+
 const refreshConfigs = async () => {
   if (window.ipcApi?.listCrawlerConfigs) {
-    configs.value = (await window.ipcApi.listCrawlerConfigs()).map(normalizeConfig)
+    configs.value = withBuiltInConfigs(await window.ipcApi.listCrawlerConfigs())
   } else {
-    configs.value = JSON.parse(localStorage.getItem(previewStorageKey) || '[]').map(normalizeConfig)
+    configs.value = withBuiltInConfigs(JSON.parse(localStorage.getItem(previewStorageKey) || '[]'))
   }
-  if (!activeConfig.value && configs.value.length) activeConfig.value = configs.value[0]
+  const activeExists = configs.value.some(item => item.id === activeConfig.value?.id)
+  if ((!activeConfig.value || !activeExists) && configs.value.length) activeConfig.value = configs.value[0]
 }
 
 const persistPreview = (saved: CrawlerConfig) => {
