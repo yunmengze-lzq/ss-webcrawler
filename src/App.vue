@@ -180,17 +180,7 @@ const blankConfig = (): CrawlerConfig => ({
   cookieUpdatedAt: '',
   loginUrl: '',
   payloadText: '{\n  "pageNo": 1,\n  "pageSize": 100\n}',
-  payloadFields: [
-    {
-      id: 'query_date',
-      label: '查询日期',
-      path: 'queryDate',
-      type: 'date',
-      defaultValue: '',
-      required: false,
-      optionsText: '',
-    },
-  ],
+  payloadFields: [],
   paginationEnabled: true,
   pageField: 'pageNo',
   pageSizeField: 'pageSize',
@@ -302,7 +292,11 @@ const saveConfig = async (config: CrawlerConfig) => {
 
 const runConfig = async (config: CrawlerConfig) => {
   pendingRunConfig.value = normalizeConfig(config)
-  runModalOpen.value = true
+  if (pendingRunConfig.value.payloadFields?.length) {
+    runModalOpen.value = true
+    return
+  }
+  await executeRun({})
 }
 
 const executeRun = async (runtimeParams: RuntimeParams) => {
