@@ -65,5 +65,8 @@ const ipcApi = {
 // 挂载到 window（contextIsolation: false 模式）
 ;(window as any).ipcApi = ipcApi
 
+// Expose IPC methods to the renderer. The app uses contextIsolation: false.
+;(window as any).ipcApi = ipcApi
+
 // 类型声明（在 src/ 里使用时有 TypeScript 提示）
 export type IpcApi = typeof ipcApi
