@@ -11,6 +11,10 @@ import path from 'path'
 import { spawnPython } from './pythonBridge'
 import { log } from './log/log'
 
+const USER_DATA_DIR = path.join(app.getPath('appData'), 'ts-agent')
+app.setName('ts-agent')
+app.setPath('userData', USER_DATA_DIR)
+
 const DATA_DIR = path.join(app.getPath('userData'), 'data')
 export const DB_PATH = path.join(DATA_DIR, 'ts_agent.db')
 const ENABLE_LOCAL_DB = process.env.TS_AGENT_ENABLE_LOCAL_DB === '1'
