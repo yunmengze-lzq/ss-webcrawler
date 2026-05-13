@@ -357,6 +357,87 @@ const saveCrawlerConfig = (config: CrawlerConfig) => {
   return saved
 }
 
+const seedCrawlerExamples = () => {
+  ensureDir(crawlerConfigDir())
+
+  const examples: CrawlerConfig[] = [
+    {
+      id: 'real_github_repo_search',
+      name: '真实网站案例-GitHub仓库搜索',
+      system: 'custom',
+      category: '真实网站测试',
+      description: '调用 GitHub 公开搜索 API，搜索 TypeScript 爬虫相关仓库，验证真实网站取数、嵌套字段映射和 Excel 保存。',
+      method: 'GET',
+      url: 'https://api.github.com/search/repositories',
+      headersText: '{\n  "Accept": "application/vnd.github+json",\n  "User-Agent": "ss-webcrawler-test"\n}',
+      cookie: '',
+      cookieRefreshMode: 'manual',
+      cookieExpireHours: 4,
+      cookieUpdatedAt: '',
+      loginUrl: '',
+      payloadText: '{\n  "q": "web crawler language:TypeScript",\n  "sort": "stars",\n  "order": "desc",\n  "per_page": 10\n}',
+      payloadFields: [],
+      paginationEnabled: false,
+      pageField: '',
+      pageSizeField: '',
+      pageSize: 10,
+      totalPath: 'total_count',
+      maxPages: 1,
+      stopMode: 'max-pages',
+      listPath: 'items',
+      fieldsText: '{\n  "仓库名": "full_name",\n  "作者": "owner.login",\n  "地址": "html_url",\n  "描述": "description",\n  "Star数": "stargazers_count",\n  "语言": "language",\n  "更新时间": "updated_at"\n}',
+      storageTarget: 'excel',
+      outputDir: path.join(os.homedir(), 'Documents', 'New project', 'output', 'real-site-test'),
+      databasePath: '',
+      tableName: 'github_repo_search',
+      primaryKey: '仓库名',
+      writeMode: 'append',
+    },
+    {
+      id: 'real_jsonplaceholder_users',
+      name: '真实网站案例-用户嵌套数据',
+      system: 'custom',
+      category: '真实网站测试',
+      description: '调用 JSONPlaceholder 公开 API，验证根数组、address/company 嵌套字段解析。',
+      method: 'GET',
+      url: 'https://jsonplaceholder.typicode.com/users',
+      headersText: '{\n  "Accept": "application/json"\n}',
+      cookie: '',
+      cookieRefreshMode: 'manual',
+      cookieExpireHours: 4,
+      cookieUpdatedAt: '',
+      loginUrl: '',
+      payloadText: '{}',
+      payloadFields: [],
+      paginationEnabled: false,
+      pageField: '',
+      pageSizeField: '',
+      pageSize: 100,
+      totalPath: '',
+      maxPages: 1,
+      stopMode: 'max-pages',
+      listPath: '',
+      fieldsText: '{\n  "用户ID": "id",\n  "姓名": "name",\n  "用户名": "username",\n  "邮箱": "email",\n  "城市": "address.city",\n  "街道": "address.street",\n  "经度": "address.geo.lng",\n  "纬度": "address.geo.lat",\n  "公司": "company.name"\n}',
+      storageTarget: 'excel',
+      outputDir: path.join(os.homedir(), 'Documents', 'New project', 'output', 'real-site-test'),
+      databasePath: '',
+      tableName: 'public_users',
+      primaryKey: '用户ID',
+      writeMode: 'append',
+    },
+  ]
+
+  for (const example of examples) {
+    const filePath = path.join(crawlerConfigDir(), `${example.id}.json`)
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, JSON.stringify({
+        ...example,
+        updatedAt: new Date().toISOString(),
+      }, null, 2), 'utf-8')
+    }
+  }
+}
+
 const inferLoginUrl = (config: CrawlerConfig) => {
   const target = config.loginUrl?.trim() || config.url
   const parsed = new URL(target)
@@ -378,6 +459,7 @@ ipcMain.handle('app:select-directory', async () => {
 
 ipcMain.handle('crawler-config:list', async () => {
   ensureDir(crawlerConfigDir())
+  seedCrawlerExamples()
   return fs.readdirSync(crawlerConfigDir())
     .filter(file => file.endsWith('.json'))
     .map(file => JSON.parse(fs.readFileSync(path.join(crawlerConfigDir(), file), 'utf-8')))
