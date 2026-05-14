@@ -32,9 +32,15 @@ export const blankConfig = (): CrawlerConfig => ({
   writeMode: 'append',
 })
 
+const storageTargets = new Set(['excel', 'database', 'both'])
+
+export const normalizeStorageTarget = (target: unknown): CrawlerConfig['storageTarget'] =>
+  storageTargets.has(String(target)) ? target as CrawlerConfig['storageTarget'] : 'excel'
+
 export const normalizeConfig = (config: Partial<CrawlerConfig>): CrawlerConfig => ({
   ...blankConfig(),
   ...config,
+  storageTarget: normalizeStorageTarget(config.storageTarget),
 })
 
 export const builtInConfigs = (): CrawlerConfig[] => [

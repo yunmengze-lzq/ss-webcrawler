@@ -200,30 +200,28 @@
             <h3>存储输出</h3>
             <p>内置 SQLite 通过 Python 标准库写入，不需要内网安装额外数据库包。</p>
             <div class="storage-options">
-              <label :class="{ selected: draft.storageTarget === 'excel' }">
-                <input v-model="draft.storageTarget" type="radio" value="excel" />
-                <span>只存 Excel</span>
-              </label>
-              <label :class="{ selected: draft.storageTarget === 'database' }">
-                <input v-model="draft.storageTarget" type="radio" value="database" />
-                <span>只入 SQLite</span>
-              </label>
-              <label :class="{ selected: draft.storageTarget === 'both' }">
-                <input v-model="draft.storageTarget" type="radio" value="both" />
-                <span>Excel + SQLite</span>
-              </label>
+              <button
+                v-for="option in storageOptions"
+                :key="option.value"
+                type="button"
+                :class="{ selected: draft.storageTarget === option.value }"
+                @click="setStorageTarget(option.value)"
+              >
+                <strong>{{ option.label }}</strong>
+                <span>{{ option.description }}</span>
+              </button>
             </div>
 
             <div class="form-grid">
               <label>
-                Excel / JSON 保存目录
+                运行留痕目录 raw/rows
                 <div class="path-row">
                   <input v-model="draft.outputDir" placeholder="留空则使用应用默认目录" />
                   <button type="button" @click="pickDir('outputDir')">选择</button>
                 </div>
               </label>
               <label>
-                SQLite 文件路径
+                本地数据库 SQLite 文件路径
                 <div class="path-row">
                   <input v-model="draft.databasePath" placeholder="留空则使用默认 ts_agent.db" />
                   <button type="button" @click="pickDir('databasePath')">目录</button>
@@ -262,7 +260,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import type { CrawlerConfig } from '../types'
+import type { CrawlerConfig, StorageTarget } from '../types'
 
 const props = defineProps<{
   modelValue: CrawlerConfig
@@ -292,6 +290,11 @@ const steps = [
 ]
 const activeStep = ref(steps[0].key)
 const stepIndex = computed(() => steps.findIndex(step => step.key === activeStep.value))
+const storageOptions: Array<{ value: StorageTarget; label: string; description: string }> = [
+  { value: 'database', label: '只入本地数据库', description: '推荐给智能体后续查询调用，不生成 Excel。' },
+  { value: 'excel', label: '只导出 Excel', description: '适合人工查看、交付和复核。' },
+  { value: 'both', label: '数据库 + Excel', description: '智能体调用和人工复核同时保留。' },
+]
 
 watch(
   () => props.modelValue,
@@ -325,6 +328,10 @@ const pickDir = async (target: 'outputDir' | 'databasePath') => {
   draft[target] = target === 'databasePath'
     ? `${selected}\\ts_agent.db`
     : selected
+}
+
+const setStorageTarget = (target: StorageTarget) => {
+  draft.storageTarget = target
 }
 
 const markCookieUpdated = () => {

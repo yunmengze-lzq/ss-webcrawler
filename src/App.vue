@@ -5,10 +5,10 @@
         <div>
           <div class="brand-line">
             <span class="brand-mark">A</span>
-            <span>智能体数据接口工具箱</span>
+            <span>智能体数据工具箱</span>
           </div>
-          <h1>接口资产</h1>
-          <p>创建、运行、复用智能体数据接口；Cookie、Payload、解析和存储都在一个配置流程内完成。</p>
+          <h1>工具箱工作台</h1>
+          <p>把接口资产、智能体资产、RPA 资产和数据分析放在一个工作台里，先沉淀可复用数据源，再给智能体调用。</p>
         </div>
         <div class="top-actions">
           <button @click="activeConfig && runConfig(activeConfig)" :disabled="!activeConfig || running">
@@ -18,11 +18,34 @@
         </div>
       </header>
 
+      <section class="tool-app-grid">
+        <button
+          v-for="item in toolboxApps"
+          :key="item.key"
+          :class="['tool-app-card', { active: item.key === activeTool }]"
+          @click="activeTool = item.key"
+        >
+          <span>{{ item.code }}</span>
+          <strong>{{ item.title }}</strong>
+          <small>{{ item.description }}</small>
+          <em>{{ item.status }}</em>
+        </button>
+      </section>
+
       <section class="toolbox-status">
         <div v-for="item in toolboxStats" :key="item.label">
           <strong>{{ item.value }}</strong>
           <span>{{ item.label }}</span>
         </div>
+      </section>
+
+      <section class="section-title-row">
+        <div>
+          <p class="eyebrow">Interface Assets</p>
+          <h2>接口资产</h2>
+          <span>接口取数内置数据库存储、Cookie 更新、Payload 筛选和字段解析。</span>
+        </div>
+        <button class="primary" @click="openCreate">新建接口</button>
       </section>
 
       <div class="asset-layout">
@@ -43,9 +66,9 @@
             </select>
             <select v-model="storageFilter">
               <option value="all">全部存储</option>
-              <option value="excel">Excel</option>
-              <option value="database">数据库</option>
-              <option value="both">Excel + 数据库</option>
+              <option value="excel">Excel 文件</option>
+              <option value="database">本地数据库</option>
+              <option value="both">Excel + 本地数据库</option>
             </select>
           </section>
 
@@ -122,8 +145,8 @@
             </div>
 
             <div class="path-summary">
-              <p><b>Excel/JSON</b>{{ activeConfig.outputDir || '默认应用目录' }}</p>
-              <p><b>SQLite</b>{{ activeConfig.databasePath || '默认 ts_agent.db' }}</p>
+              <p><b>运行留痕 raw/rows</b>{{ activeConfig.outputDir || '默认应用目录' }}</p>
+              <p><b>本地数据库 SQLite</b>{{ activeConfig.databasePath || '默认 ts_agent.db' }}</p>
             </div>
           </div>
 
@@ -194,6 +217,38 @@ const pendingRunConfig = ref<CrawlerConfig | null>(null)
 const keyword = ref('')
 const systemFilter = ref('all')
 const storageFilter = ref<'all' | StorageTarget>('all')
+const activeTool = ref('interface_asset')
+
+const toolboxApps = [
+  {
+    key: 'interface_asset',
+    code: 'IF',
+    title: '接口资产',
+    description: 'Fetch/XHR 取数、Payload、Cookie、字段映射',
+    status: '已启用',
+  },
+  {
+    key: 'agent_asset',
+    code: 'AG',
+    title: '智能体资产',
+    description: '后续接入提示词、工具调用和知识配置',
+    status: '规划中',
+  },
+  {
+    key: 'rpa_asset',
+    code: 'RP',
+    title: 'RPA资产',
+    description: '处理登录、按钮下载、Excel/PDF 兜底取数',
+    status: '预留',
+  },
+  {
+    key: 'analysis_asset',
+    code: 'DA',
+    title: '数据分析',
+    description: '面向月报、校验、趋势和问题扫描',
+    status: '预留',
+  },
+]
 
 const toolboxStats = computed(() => {
   const total = configs.value.length
@@ -249,7 +304,7 @@ const openCreate = () => {
 }
 
 const openEdit = (config: CrawlerConfig) => {
-  Object.assign(editingConfig, clone(config))
+  Object.assign(editingConfig, normalizeConfig(clone(config)))
   modalOpen.value = true
 }
 
@@ -286,9 +341,10 @@ const selectConfig = (config: CrawlerConfig) => {
 }
 
 const saveConfig = async (config: CrawlerConfig) => {
+  const normalized = normalizeConfig(toIpcSafe(config))
   const saved = {
-    ...config,
-    id: config.id || `${config.system || 'custom'}_${Date.now()}`,
+    ...normalized,
+    id: normalized.id || `${normalized.system || 'custom'}_${Date.now()}`,
     updatedAt: new Date().toISOString(),
   }
 
@@ -339,9 +395,9 @@ const executeRun = async (runtimeParams: RuntimeParams) => {
 
 const systemName = (key: string) => systems.find(item => item.key === key)?.name || key
 const storageName = (target: StorageTarget) => ({
-  excel: 'Excel',
-  database: '数据库',
-  both: 'Excel + 数据库',
+  excel: 'Excel 文件',
+  database: '本地数据库',
+  both: 'Excel + 本地数据库',
 }[target] || 'Excel')
 
 const cookieAgeHours = (config: CrawlerConfig) => {

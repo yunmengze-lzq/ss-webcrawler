@@ -733,6 +733,96 @@ label {
   padding: 0 14px;
 }
 
+.tool-app-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tool-app-card {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  grid-template-areas:
+    "code title"
+    "code desc"
+    "code status";
+  gap: 4px 12px;
+  align-items: center;
+  min-height: 116px;
+  padding: 14px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+  transition: border-color .2s ease, background .2s ease, transform .2s ease;
+}
+
+.tool-app-card:hover {
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.tool-app-card.active {
+  border-color: #1e40af;
+  background: #f8fbff;
+}
+
+.tool-app-card > span {
+  grid-area: code;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 900;
+}
+
+.tool-app-card strong {
+  grid-area: title;
+  font-size: 16px;
+}
+
+.tool-app-card small {
+  grid-area: desc;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.tool-app-card em {
+  grid-area: status;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.tool-app-card.active em {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+}
+
+.section-title-row h2 {
+  margin: 2px 0 4px;
+  font-size: 26px;
+}
+
+.section-title-row span {
+  color: #64748b;
+}
+
 .asset-layout {
   display: grid;
   grid-template-columns: minmax(480px, 0.95fr) minmax(420px, 1.05fr);
@@ -991,6 +1081,42 @@ label {
   padding: 0 12px;
 }
 
+.storage-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.storage-options button {
+  display: block;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  text-align: left;
+}
+
+.storage-options button strong,
+.storage-options button span {
+  display: block;
+}
+
+.storage-options button strong {
+  margin-bottom: 5px;
+}
+
+.storage-options button span {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.storage-options button.selected {
+  border-color: #1e40af;
+  background: #f8fbff;
+  box-shadow: inset 0 0 0 1px #1e40af;
+}
+
 .modal-actions {
   gap: 8px;
 }
@@ -998,6 +1124,10 @@ label {
 @media (max-width: 1120px) {
   .asset-layout {
     grid-template-columns: 1fr;
+  }
+
+  .tool-app-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1010,6 +1140,11 @@ label {
 
   .top-actions {
     margin-top: 12px;
+  }
+
+  .tool-app-grid,
+  .storage-options {
+    grid-template-columns: 1fr;
   }
 
   .interface-row {

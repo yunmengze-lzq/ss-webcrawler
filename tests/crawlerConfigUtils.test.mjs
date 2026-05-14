@@ -7,6 +7,7 @@ import {
   buildGetUrl,
   extractRowsFromResponse,
   parseHeaders,
+  normalizeConfig,
   toIpcSafe,
   selectInitialConfig,
   withBuiltInConfigs,
@@ -144,6 +145,15 @@ test('applyRuntimeParams overwrites nested payload filters before running', () =
     },
     pageNo: 3,
   })
+})
+
+test('normalizeConfig preserves database-only storage target', () => {
+  const config = normalizeConfig({
+    name: '数据库接口',
+    storageTarget: 'database',
+  })
+
+  assert.equal(config.storageTarget, 'database')
 })
 
 test('toIpcSafe converts non-cloneable values to plain json', () => {
