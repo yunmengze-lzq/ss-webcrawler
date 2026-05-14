@@ -180,20 +180,26 @@
           <section v-if="activeStep === 'parse'" class="step-panel">
             <h3>数据解析</h3>
             <p>接口返回会先保存为 raw.json，再按列表路径和字段映射生成标准 rows.json。</p>
-            <div class="form-grid">
-              <label>
-                列表路径
-                <input v-model="draft.listPath" placeholder="data.list；根数组可留空" />
-              </label>
-              <label>
-                字段状态
-                <input :value="fieldStatus" disabled />
+            <div class="parse-layout">
+              <div class="parse-settings">
+                <label>
+                  列表路径
+                  <input v-model="draft.listPath" placeholder="data.list；根数组可留空" />
+                </label>
+                <label>
+                  字段状态
+                  <input :value="fieldStatus" disabled />
+                </label>
+                <div class="parse-hint">
+                  <strong>映射方式</strong>
+                  <span>左侧是输出列名，右侧是 JSON 路径，例如 `address.city` 会读取嵌套字段。</span>
+                </div>
+              </div>
+              <label class="mapping-editor">
+                字段映射 JSON
+                <textarea v-model="draft.fieldsText" class="tall" spellcheck="false"></textarea>
               </label>
             </div>
-            <label>
-              字段映射 JSON
-              <textarea v-model="draft.fieldsText" class="tall" spellcheck="false"></textarea>
-            </label>
           </section>
 
           <section v-if="activeStep === 'storage'" class="step-panel">
@@ -207,6 +213,7 @@
                 :class="{ selected: draft.storageTarget === option.value }"
                 @click="setStorageTarget(option.value)"
               >
+                <i v-html="iconSvg(option.icon)"></i>
                 <strong>{{ option.label }}</strong>
                 <span>{{ option.description }}</span>
               </button>
@@ -290,11 +297,18 @@ const steps = [
 ]
 const activeStep = ref(steps[0].key)
 const stepIndex = computed(() => steps.findIndex(step => step.key === activeStep.value))
-const storageOptions: Array<{ value: StorageTarget; label: string; description: string }> = [
-  { value: 'database', label: '只入本地数据库', description: '推荐给智能体后续查询调用，不生成 Excel。' },
-  { value: 'excel', label: '只导出 Excel', description: '适合人工查看、交付和复核。' },
-  { value: 'both', label: '数据库 + Excel', description: '智能体调用和人工复核同时保留。' },
+const storageOptions: Array<{ value: StorageTarget; label: string; description: string; icon: string }> = [
+  { value: 'database', label: '只入本地数据库', description: '推荐给智能体后续查询调用，不生成 Excel。', icon: 'database' },
+  { value: 'excel', label: '只导出 Excel', description: '适合人工查看、交付和复核。', icon: 'excel' },
+  { value: 'both', label: '数据库 + Excel', description: '智能体调用和人工复核同时保留。', icon: 'both' },
 ]
+
+const icons: Record<string, string> = {
+  database: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.4 0 8 1.3 8 3v12c0 1.7-3.6 3-8 3s-8-1.3-8-3V6c0-1.7 3.6-3 8-3zm0 2c-3.5 0-5.7.8-6 1 .3.2 2.5 1 6 1s5.7-.8 6-1c-.3-.2-2.5-1-6-1zM6 9v2c.6.5 2.8 1.2 6 1.2s5.4-.7 6-1.2V9c-1.5.7-3.6 1-6 1s-4.5-.3-6-1zm0 5v3.8c.4.4 2.6 1.2 6 1.2s5.6-.8 6-1.2V14c-1.5.7-3.6 1-6 1s-4.5-.3-6-1z"/></svg>',
+  excel: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5V3zm9 2H7v14h10V8h-3V5zm-5 6l1.8 2.5L12.7 11H15l-3 4 3 4h-2.3l-1.9-2.6L9 19H6.8l2.9-4-2.9-4H9z"/></svg>',
+  both: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h9v6H4V4zm11 0h5v16h-5V4zM4 12h9v8H4v-8zm2-6v2h5V6H6zm0 8v4h5v-4H6zm11-8v12h1V6h-1z"/></svg>',
+}
+const iconSvg = (name: string) => icons[name] || icons.database
 
 watch(
   () => props.modelValue,

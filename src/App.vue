@@ -4,14 +4,17 @@
       <header class="app-topbar">
         <div>
           <div class="brand-line">
-            <span class="brand-mark">A</span>
+            <span class="brand-mark" v-html="iconSvg('spark')"></span>
             <span>智能体数据工具箱</span>
           </div>
           <h1>{{ activeTool === 'home' ? '工具箱工作台' : currentTool.title }}</h1>
           <p>{{ activeTool === 'home' ? '选择一个小工具进入配置。接口资产负责沉淀可复用数据源，后续再联动智能体、RPA 和分析模块。' : currentTool.description }}</p>
         </div>
         <div v-if="activeTool !== 'home'" class="top-actions">
-          <button @click="backHome">返回工具箱</button>
+          <button class="soft-button" @click="backHome">
+            <span class="button-icon" v-html="iconSvg('back')"></span>
+            返回工具箱
+          </button>
         </div>
       </header>
 
@@ -19,11 +22,14 @@
         <button
           v-for="item in toolboxApps"
           :key="item.key"
-          class="tool-app-card"
+          :class="['tool-app-card', item.tone]"
           @click="openTool(item.key)"
         >
-          <span>{{ item.code }}</span>
-          <strong>{{ item.title }}</strong>
+          <span class="tool-card-icon" v-html="iconSvg(item.icon)"></span>
+          <strong>
+            {{ item.title }}
+            <i v-html="iconSvg('arrow')"></i>
+          </strong>
           <small>{{ item.description }}</small>
           <em>{{ item.status }}</em>
         </button>
@@ -43,7 +49,10 @@
           <span>接口取数内置数据库存储、Cookie 更新、Payload 筛选和字段解析。</span>
           <small v-if="storagePaths.configDir">配置目录：{{ storagePaths.configDir }}</small>
         </div>
-        <button class="primary" @click="openCreate">新建接口</button>
+        <button class="primary action-button" @click="openCreate">
+          <span class="button-icon" v-html="iconSvg('plus')"></span>
+          新建接口
+        </button>
       </section>
 
       <section v-if="activeTool !== 'home' && activeTool !== 'interface_asset'" class="tool-placeholder">
@@ -59,26 +68,37 @@
               <h2>已保存接口</h2>
               <p>选择接口后在右侧查看配置、编辑、运行和输出。</p>
             </div>
+            <span class="panel-badge">{{ filteredConfigs.length }} 个接口</span>
           </div>
 
           <section class="toolbar">
-            <input v-model="keyword" placeholder="搜索接口名称、系统、分类" />
-            <select v-model="systemFilter">
-              <option value="all">全部系统</option>
-              <option v-for="item in systems" :key="item.key" :value="item.key">{{ item.name }}</option>
-            </select>
-            <select v-model="storageFilter">
-              <option value="all">全部存储</option>
-              <option value="excel">Excel 文件</option>
-              <option value="database">本地数据库</option>
-              <option value="both">Excel + 本地数据库</option>
-            </select>
+            <label class="search-field">
+              <span v-html="iconSvg('search')"></span>
+              <input v-model="keyword" placeholder="搜索接口名称、系统、分类" />
+            </label>
+            <label>
+              <select v-model="systemFilter">
+                <option value="all">全部系统</option>
+                <option v-for="item in systems" :key="item.key" :value="item.key">{{ item.name }}</option>
+              </select>
+            </label>
+            <label>
+              <select v-model="storageFilter">
+                <option value="all">全部存储</option>
+                <option value="excel">Excel 文件</option>
+                <option value="database">本地数据库</option>
+                <option value="both">Excel + 本地数据库</option>
+              </select>
+            </label>
           </section>
 
           <div class="empty-state compact" v-if="!filteredConfigs.length">
             <h3>还没有可复用接口</h3>
             <p>点击“新建接口”，保存 URL、Headers、Payload、字段映射和存储规则。</p>
-            <button class="primary" @click="openCreate">新建第一个接口</button>
+            <button class="primary action-button" @click="openCreate">
+              <span class="button-icon" v-html="iconSvg('plus')"></span>
+              新建第一个接口
+            </button>
           </div>
 
           <div class="interface-table" v-else>
@@ -93,7 +113,10 @@
                 <small>{{ item.description || item.url || '未填写说明' }}</small>
               </span>
               <span class="method">{{ item.method }}</span>
-              <span>{{ storageName(item.storageTarget) }}</span>
+              <span :class="['storage-chip', item.storageTarget]">
+                <i v-html="iconSvg(storageIcon(item.storageTarget))"></i>
+                {{ storageName(item.storageTarget) }}
+              </span>
               <span :class="['cookie-chip', cookieClass(item)]">{{ cookieLabel(item) }}</span>
               <span>{{ item.lastCount ?? '-' }}</span>
             </button>
@@ -113,12 +136,25 @@
 
             <div class="detail-actions">
               <button class="primary" @click="runConfig(activeConfig)" :disabled="running">
+                <span class="button-icon" v-html="iconSvg('play')"></span>
                 {{ runningId === activeConfig.id ? '运行中...' : '运行接口' }}
               </button>
-              <button @click="openEdit(activeConfig)">编辑</button>
-              <button @click="duplicateConfig(activeConfig)">复制</button>
-              <button class="danger" @click="deleteConfig(activeConfig)">删除</button>
-              <button @click="refreshCookie(activeConfig)">更新 Cookie</button>
+              <button @click="openEdit(activeConfig)">
+                <span class="button-icon" v-html="iconSvg('edit')"></span>
+                编辑
+              </button>
+              <button @click="duplicateConfig(activeConfig)">
+                <span class="button-icon" v-html="iconSvg('copy')"></span>
+                复制
+              </button>
+              <button class="danger" @click="deleteConfig(activeConfig)">
+                <span class="button-icon" v-html="iconSvg('trash')"></span>
+                删除
+              </button>
+              <button @click="refreshCookie(activeConfig)">
+                <span class="button-icon" v-html="iconSvg('cookie')"></span>
+                更新 Cookie
+              </button>
             </div>
 
             <div class="detail-grid">
@@ -234,33 +270,59 @@ const storagePaths = reactive({
 const toolboxApps = [
   {
     key: 'interface_asset',
-    code: 'IF',
+    icon: 'plug',
+    tone: 'featured',
     title: '接口资产',
     description: 'Fetch/XHR 取数、Payload、Cookie、字段映射',
     status: '已启用',
   },
   {
     key: 'agent_asset',
-    code: 'AG',
+    icon: 'bot',
+    tone: 'muted',
     title: '智能体资产',
     description: '后续接入提示词、工具调用和知识配置',
     status: '规划中',
   },
   {
     key: 'rpa_asset',
-    code: 'RP',
+    icon: 'cursor',
+    tone: 'muted',
     title: 'RPA资产',
     description: '处理登录、按钮下载、Excel/PDF 兜底取数',
     status: '预留',
   },
   {
     key: 'analysis_asset',
-    code: 'DA',
+    icon: 'chart',
+    tone: 'muted',
     title: '数据分析',
     description: '面向月报、校验、趋势和问题扫描',
     status: '预留',
   },
 ]
+
+const icons: Record<string, string> = {
+  spark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9L12 3z"/><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z"/></svg>',
+  plug: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h2v5h4V3h2v5h2v3a6 6 0 0 1-5 5.9V21h-2v-4.1A6 6 0 0 1 6 11V8h2V3zm0 7v1a4 4 0 0 0 8 0v-1H8z"/></svg>',
+  bot: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v3h4a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4V3zm-4 5a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H7zm2 4a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm5 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0z"/></svg>',
+  cursor: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l14 8-6.1 1.4 3.7 5.2-2.4 1.7-3.7-5.2L6.8 19 5 3z"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16v2H2V4h2v15zm3-2V9h3v8H7zm5 0V5h3v12h-3zm5 0v-6h3v6h-3z"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7-1.4-1.4 4.6-4.6H4v-2h12.2l-4.6-4.6L13 5z"/></svg>',
+  back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5l1.4 1.4L7.8 11H20v2H7.8l4.6 4.6L11 19l-7-7 7-7z"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>',
+  search: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 4a6.5 6.5 0 0 1 5.1 10.5l4 4-1.4 1.4-4-4A6.5 6.5 0 1 1 10.5 4zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>',
+  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8V4z"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17.2V20h2.8L17.9 8.9l-2.8-2.8L4 17.2zM19.7 7.1a1 1 0 0 0 0-1.4l-1.4-1.4a1 1 0 0 0-1.4 0l-.8.8 2.8 2.8.8-.8z"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm0 2v10h10V9H8zM4 3h10v2H4v10H2V5a2 2 0 0 1 2-2z"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2zm-2 6h10l-.8 11H7.8L7 9zm3 2v7h2v-7h-2zm4 0v7h2v-7h-2z"/></svg>',
+  cookie: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12.4A8 8 0 1 1 11.6 4 4 4 0 0 0 16 8.4a4 4 0 0 0 4 4zM9 9H7v2h2V9zm5 7h-2v2h2v-2zm-5-1H7v2h2v-2zm5-4h-2v2h2v-2z"/></svg>',
+  database: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.4 0 8 1.3 8 3v12c0 1.7-3.6 3-8 3s-8-1.3-8-3V6c0-1.7 3.6-3 8-3zm0 2c-3.5 0-5.7.8-6 1 .3.2 2.5 1 6 1s5.7-.8 6-1c-.3-.2-2.5-1-6-1zM6 9v2c.6.5 2.8 1.2 6 1.2s5.4-.7 6-1.2V9c-1.5.7-3.6 1-6 1s-4.5-.3-6-1zm0 5v3.8c.4.4 2.6 1.2 6 1.2s5.6-.8 6-1.2V14c-1.5.7-3.6 1-6 1s-4.5-.3-6-1z"/></svg>',
+  excel: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5V3zm9 2H7v14h10V8h-3V5zm-5 6l1.8 2.5L12.7 11H15l-3 4 3 4h-2.3l-1.9-2.6L9 19H6.8l2.9-4-2.9-4H9z"/></svg>',
+}
+
+const iconSvg = (name: string) => icons[name] || icons.spark
+const storageIcon = (target: StorageTarget) => target === 'database' ? 'database' : target === 'excel' ? 'excel' : 'copy'
 
 const currentTool = computed(() =>
   toolboxApps.find(item => item.key === activeTool.value) || toolboxApps[0]

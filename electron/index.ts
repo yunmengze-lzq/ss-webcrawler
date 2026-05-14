@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, session } from 'electron'
 import type { DownloadItem, Event, WebContents } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import os from 'os'
 import { DB_PATH } from './db'
 import { log } from './log/log'
 import { spawnPython } from './pythonBridge'
@@ -373,6 +374,11 @@ const saveCrawlerConfig = (config: CrawlerConfig) => {
   return saved
 }
 
+const readCrawlerConfigFile = (filePath: string) => {
+  const raw = fs.readFileSync(filePath, 'utf-8').replace(/^\uFEFF/, '')
+  return normalizeCrawlerConfig(JSON.parse(raw))
+}
+
 const deleteCrawlerConfig = (id: string) => {
   if (!id) return false
   const filePath = path.join(crawlerConfigDir(), `${safeFileName(id)}.json`)
@@ -484,9 +490,18 @@ ipcMain.handle('app:select-directory', async () => {
 ipcMain.handle('crawler-config:list', async () => {
   ensureDir(crawlerConfigDir())
   seedCrawlerExamples()
-  return fs.readdirSync(crawlerConfigDir())
+  const configs: CrawlerConfig[] = []
+  for (const file of fs.readdirSync(crawlerConfigDir())
     .filter(file => file.endsWith('.json'))
-    .map(file => normalizeCrawlerConfig(JSON.parse(fs.readFileSync(path.join(crawlerConfigDir(), file), 'utf-8'))))
+  ) {
+    const filePath = path.join(crawlerConfigDir(), file)
+    try {
+      configs.push(readCrawlerConfigFile(filePath))
+    } catch (error: any) {
+      log.warn(`[crawler-config:list] 跳过无法解析的配置 ${file}: ${error?.message || String(error)}`)
+    }
+  }
+  return configs
 })
 
 ipcMain.handle('crawler-config:save', async (_e, config: CrawlerConfig) => {

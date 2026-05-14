@@ -31,4 +31,4 @@ if not exist "%APP_ENTRY%" (
   exit /b 1
 )
 
-start "" /D "%APP_ROOT%" "%APP_ROOT%node_modules\electron\dist\electron.exe" "%APP_ROOT%"
+start "" /D "%APP_ROOT%" "%APP_ROOT%node_modules\electron\dist\electron.exe" "%APP_ENTRY%"

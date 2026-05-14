@@ -48,4 +48,8 @@ if not exist "%APP_ENTRY%" (
   exit /b 1
 )
 
-start "" /D "%APP_ROOT%" "%APP_ROOT%node_modules\electron\dist\electron.exe" "%APP_ENTRY%"
+if defined SS_WEBCRAWLER_DEBUG_PORT (
+  start "" /D "%APP_ROOT%" "%APP_ROOT%node_modules\electron\dist\electron.exe" --remote-debugging-port=%SS_WEBCRAWLER_DEBUG_PORT% "%APP_ENTRY%"
+) else (
+  start "" /D "%APP_ROOT%" "%APP_ROOT%node_modules\electron\dist\electron.exe" "%APP_ENTRY%"
+)
