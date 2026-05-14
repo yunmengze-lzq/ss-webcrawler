@@ -14,6 +14,7 @@ button {
   background: #fff;
   color: #172033;
   cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
 button:disabled {
@@ -1172,6 +1173,7 @@ body {
   max-width: 1480px;
   margin: 0 auto;
   padding: 24px;
+  animation: fade-up .24s ease both;
 }
 
 .app-topbar {
@@ -1204,11 +1206,14 @@ body {
   min-height: 138px;
   border-color: #e5e7eb;
   box-shadow: none;
+  animation: fade-up .28s ease both;
 }
 
 .tool-app-card:hover {
   border-color: #1d4ed8;
   background: #f8fafc;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+  transform: translateY(-2px);
 }
 
 .tool-app-card em {
@@ -1221,12 +1226,25 @@ body {
 .asset-detail-panel .detail-card,
 .result-panel {
   border-color: #e5e7eb;
+  animation: fade-up .22s ease both;
 }
 
 input,
 select,
 textarea {
   min-height: 38px;
+  border-color: #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, .12);
+  outline: 0;
 }
 
 .config-drawer input,
@@ -1236,6 +1254,49 @@ textarea {
 
 .config-drawer textarea {
   min-height: 92px;
+}
+
+.section-title-row small {
+  display: block;
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.interface-row:hover {
+  border-color: #93c5fd;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.detail-actions button:hover,
+.top-actions button:hover,
+.section-title-row button:hover,
+.modal-actions button:hover {
+  transform: translateY(-1px);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
 }
 
 .modal-actions {

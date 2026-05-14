@@ -12,10 +12,6 @@
         </div>
         <div v-if="activeTool !== 'home'" class="top-actions">
           <button @click="backHome">返回工具箱</button>
-          <button @click="activeConfig && runConfig(activeConfig)" :disabled="!activeConfig || running">
-            {{ running ? '运行中...' : '运行选中接口' }}
-          </button>
-          <button v-if="activeTool === 'interface_asset'" class="primary" @click="openCreate">新建接口</button>
         </div>
       </header>
 
@@ -45,6 +41,7 @@
           <p class="eyebrow">Interface Assets</p>
           <h2>接口资产</h2>
           <span>接口取数内置数据库存储、Cookie 更新、Payload 筛选和字段解析。</span>
+          <small v-if="storagePaths.configDir">配置目录：{{ storagePaths.configDir }}</small>
         </div>
         <button class="primary" @click="openCreate">新建接口</button>
       </section>
@@ -60,9 +57,8 @@
           <div class="asset-list-head">
             <div>
               <h2>已保存接口</h2>
-              <p>选择接口后在右侧查看配置、运行和输出。</p>
+              <p>选择接口后在右侧查看配置、编辑、运行和输出。</p>
             </div>
-            <button @click="openCreate">新建</button>
           </div>
 
           <section class="toolbar">
@@ -198,6 +194,7 @@ declare global {
       listCrawlerConfigs: () => Promise<CrawlerConfig[]>
       saveCrawlerConfig: (config: CrawlerConfig) => Promise<{ success: boolean; config: CrawlerConfig }>
       deleteCrawlerConfig?: (id: string) => Promise<{ success: boolean }>
+      getCrawlerConfigPaths?: () => Promise<{ configDir: string; dataDir: string; databasePath: string }>
       runCrawlerConfig: (config: CrawlerConfig, runtimeParams?: RuntimeParams) => Promise<RunResult>
       refreshCrawlerCookie?: (config: CrawlerConfig) => Promise<{ success: boolean; config?: CrawlerConfig; error?: string }>
       selectDirectory?: () => Promise<string | null>
@@ -228,6 +225,11 @@ const keyword = ref('')
 const systemFilter = ref('all')
 const storageFilter = ref<'all' | StorageTarget>('all')
 const activeTool = ref('home')
+const storagePaths = reactive({
+  configDir: '',
+  dataDir: '',
+  databasePath: '',
+})
 
 const toolboxApps = [
   {
@@ -314,6 +316,15 @@ const refreshConfigs = async () => {
   activeConfig.value = selectInitialConfig(configs.value, activeConfig.value)
 }
 
+const refreshStoragePaths = async () => {
+  if (!window.ipcApi?.getCrawlerConfigPaths) return
+  try {
+    Object.assign(storagePaths, await window.ipcApi.getCrawlerConfigPaths())
+  } catch (error) {
+    console.warn('读取配置目录失败。', error)
+  }
+}
+
 const persistPreview = (saved: CrawlerConfig) => {
   const next = [saved, ...configs.value.filter(item => item.id !== saved.id)]
   localStorage.setItem(previewStorageKey, JSON.stringify(next))
@@ -382,13 +393,23 @@ const saveConfig = async (config: CrawlerConfig) => {
     updatedAt: new Date().toISOString(),
   }
 
-  if (window.ipcApi?.saveCrawlerConfig) {
-    const res = await window.ipcApi.saveCrawlerConfig(toIpcSafe(saved))
-    activeConfig.value = res.config
-  } else {
-    persistPreview(saved)
-    activeConfig.value = saved
-    result.value = { success: true, message: '预览模式已保存到浏览器本地。' }
+  try {
+    if (window.ipcApi?.saveCrawlerConfig) {
+      const res = await window.ipcApi.saveCrawlerConfig(toIpcSafe(saved))
+      if (!res?.success || !res.config) throw new Error('主进程未返回保存后的接口配置')
+      activeConfig.value = normalizeConfig(res.config)
+      result.value = {
+        success: true,
+        message: `接口已保存。配置文件目录：${storagePaths.configDir || '应用数据目录/crawler-configs'}`,
+      }
+    } else {
+      persistPreview(saved)
+      activeConfig.value = saved
+      result.value = { success: true, message: '预览模式已保存到浏览器本地。' }
+    }
+  } catch (error: any) {
+    result.value = { success: false, error: `保存失败：${error?.message ?? String(error)}` }
+    return
   }
 
   const deleted = deletedConfigIds()
@@ -475,5 +496,8 @@ const cookieClass = (config: CrawlerConfig) => ({
   stale: !config.cookie || cookieAgeHours(config) > (config.cookieExpireHours || 4),
 })
 
-onMounted(refreshConfigs)
+onMounted(async () => {
+  await refreshStoragePaths()
+  await refreshConfigs()
+})
 </script>

@@ -498,6 +498,16 @@ ipcMain.handle('crawler-config:delete', async (_e, id: string) => {
   return { success: deleteCrawlerConfig(id) }
 })
 
+ipcMain.handle('crawler-config:paths', async () => {
+  ensureDir(crawlerConfigDir())
+  ensureDir(crawlerDataDir())
+  return {
+    configDir: crawlerConfigDir(),
+    dataDir: crawlerDataDir(),
+    databasePath: defaultDbPath(),
+  }
+})
+
 ipcMain.handle('crawler-config:refresh-cookie', async (_e, config: CrawlerConfig) => {
   let loginUrl = ''
   try {
