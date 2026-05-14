@@ -153,6 +153,20 @@ const connectCdp = (wsUrl) => new Promise((resolve, reject) => {
   socket.on('error', reject)
 })
 
+const evaluateWithRetry = async (cdp, params, attempts = 8) => {
+  let lastError
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await cdp.send('Runtime.evaluate', params)
+    } catch (error) {
+      lastError = error
+      if (!String(error?.message || '').includes('Execution context was destroyed')) throw error
+      await wait(500)
+    }
+  }
+  throw lastError
+}
+
 const electron = spawn('cmd.exe', ['/c', bat], {
   cwd: root,
   env: { ...process.env, SS_WEBCRAWLER_DEBUG_PORT: String(port) },
@@ -161,9 +175,20 @@ const electron = spawn('cmd.exe', ['/c', bat], {
 })
 
 let cdp
+let smokeConfigPath = ''
 try {
   const page = await pollTargets()
   cdp = await connectCdp(page.webSocketDebuggerUrl)
+  await evaluateWithRetry(cdp, {
+    expression: `
+      new Promise(resolve => {
+        if (document.readyState === 'complete') resolve(true);
+        else window.addEventListener('load', () => resolve(true), { once: true });
+      })
+    `,
+    awaitPromise: true,
+    returnByValue: true,
+  })
   const id = `smoke_${Date.now()}`
   const expression = `
     (async () => {
@@ -210,7 +235,7 @@ try {
       };
     })()
   `
-  const result = await cdp.send('Runtime.evaluate', {
+  const result = await evaluateWithRetry(cdp, {
     expression,
     awaitPromise: true,
     returnByValue: true,
@@ -222,6 +247,7 @@ try {
     'crawler-configs',
     `${id}.json`,
   )
+  smokeConfigPath = configPath
   if (!fs.existsSync(configPath)) {
     throw new Error(`Saved config file was not created: ${configPath}`)
   }
@@ -234,9 +260,16 @@ try {
     expression: `window.ipcApi.deleteCrawlerConfig(${JSON.stringify(id)})`,
     awaitPromise: true,
     returnByValue: true,
-  })
+  }).catch(() => {})
+  if (fs.existsSync(configPath)) fs.unlinkSync(configPath)
+  if (fs.existsSync(configPath)) {
+    throw new Error(`Smoke config cleanup failed: ${configPath}`)
+  }
   cdp.send('Browser.close').catch(() => {})
 } finally {
+  if (smokeConfigPath && fs.existsSync(smokeConfigPath)) {
+    fs.unlinkSync(smokeConfigPath)
+  }
   cdp?.close()
   electron.kill()
 }
