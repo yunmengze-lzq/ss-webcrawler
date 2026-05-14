@@ -1011,6 +1011,10 @@ label {
 
 .result-panel {
   position: static;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  max-height: min(440px, calc(100vh - 260px));
+  overflow: hidden;
   padding: 12px;
 }
 
@@ -1029,9 +1033,33 @@ label {
   font-size: 13px;
 }
 
+.result-panel .file-list {
+  min-width: 0;
+  max-height: 92px;
+  overflow: auto;
+}
+
+.result-panel .file-list p,
+.result-panel .file-list span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-panel .preview-box {
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 .result-panel pre {
-  min-height: 120px;
-  max-height: 220px;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* Drawer form */
@@ -1072,6 +1100,10 @@ label {
   min-width: 0;
   min-height: 46px;
   padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
   text-align: left;
 }
 
@@ -1083,12 +1115,14 @@ label {
 .drawer-steps strong,
 .drawer-steps span {
   display: block;
+  max-width: 100%;
 }
 
 .drawer-steps span {
-  margin-top: 2px;
   color: #64748b;
   font-size: 10px;
+  line-height: 1.25;
+  white-space: normal;
 }
 
 .drawer-form {
@@ -1754,7 +1788,17 @@ button {
 .drawer-steps button span {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.drawer-steps button strong {
   white-space: nowrap;
+}
+
+.drawer-steps button span {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 .drawer-steps button.active {
@@ -1959,7 +2003,7 @@ button {
   }
 
   .drawer-steps button {
-    min-height: 44px;
+    min-height: 48px;
     padding: 8px 10px;
   }
 
@@ -2083,7 +2127,7 @@ button {
   }
 
   .drawer-steps button {
-    min-height: 50px;
+    min-height: 48px;
     padding: 8px 10px;
   }
 
