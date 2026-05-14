@@ -2,11 +2,21 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  builtInConfigs,
   buildGetUrl,
   extractRowsFromResponse,
   selectInitialConfig,
   withBuiltInConfigs,
 } from '../src/crawlerConfigUtils.ts'
+
+test('built-in examples include github search and nested json users', () => {
+  const names = builtInConfigs().map(item => item.name)
+
+  assert.deepEqual(names, [
+    '真实网站案例-GitHub仓库搜索',
+    '真实网站案例-用户嵌套数据',
+  ])
+})
 
 test('built-in real website example is always available before saved configs', () => {
   const saved = [{
@@ -46,7 +56,8 @@ test('built-in real website example is always available before saved configs', (
 
   assert.equal(configs[0].id, 'real_github_repo_search')
   assert.equal(configs[0].name, '真实网站案例-GitHub仓库搜索')
-  assert.equal(configs[1].id, 'custom_saved')
+  assert.equal(configs[1].id, 'real_jsonplaceholder_users')
+  assert.equal(configs[2].id, 'custom_saved')
 })
 
 test('selectInitialConfig chooses the built-in case when active config is missing', () => {

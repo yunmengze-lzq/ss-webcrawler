@@ -2,6 +2,7 @@
 setlocal
 set "APP_ROOT=%~dp0"
 cd /d "%APP_ROOT%"
+set "VITE_DEV_SERVER_URL="
 
 if not exist "%APP_ROOT%node_modules\electron\dist\electron.exe" (
   echo [ERROR] Electron runtime is missing.
@@ -30,4 +31,4 @@ if not exist "%APP_ENTRY%" (
   exit /b 1
 )
 
-start "" /D "%APP_ROOT%" "%APP_ROOT%node_modules\electron\dist\electron.exe" "%APP_ENTRY%"
+start "" /D "%APP_ROOT%" "%APP_ROOT%node_modules\electron\dist\electron.exe" "%APP_ROOT%"

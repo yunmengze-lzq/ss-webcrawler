@@ -6,13 +6,14 @@ import { DB_PATH } from './db'
 import { log } from './log/log'
 import { spawnPython } from './pythonBridge'
 import ExcelJS from 'exceljs'
+import { resolveMainWindowTarget } from './windowTarget'
 
 const USER_DATA_DIR = path.join(app.getPath('appData'), 'ts-agent')
 app.setName('ts-agent')
 app.setPath('userData', USER_DATA_DIR)
 
 const isDev = !app.isPackaged
-const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL || 'http://127.0.0.1:5178'
+const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL
 const distIndex = () => path.join(__dirname, '../dist/index.html')
 
 const resolvePreload = (name: string) => {
@@ -94,11 +95,17 @@ const createMainWindow = () => {
       ...(fs.existsSync(preloadJs) ? { preload: preloadJs } : {}),
     },
   })
-  if (isDev && /^https?:\/\//i.test(VITE_DEV_URL)) {
-    mainWin.loadURL(VITE_DEV_URL)
+  const target = resolveMainWindowTarget({
+    isPackaged: app.isPackaged,
+    viteDevServerUrl: VITE_DEV_URL,
+    distIndexPath: distIndex(),
+  })
+
+  if (target.mode === 'url') {
+    mainWin.loadURL(target.value)
     mainWin.webContents.openDevTools()
   } else {
-    mainWin.loadFile(distIndex())
+    mainWin.loadFile(target.value)
   }
 }
 
