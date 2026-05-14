@@ -10,16 +10,17 @@ import {
   parseJsonObject,
 } from '../src/crawlerConfigUtils.ts'
 
-const config = builtInConfigs().find(item => item.id === 'real_github_repo_search')
+const configId = process.argv[2] || 'real_jsonplaceholder_posts'
+const config = builtInConfigs().find(item => item.id === configId)
 
 if (!config) {
-  throw new Error('缺少真实网站案例-GitHub仓库搜索')
+  throw new Error(`缺少真实网站案例: ${configId}`)
 }
 
 const payload = parseJsonObject(config.payloadText)
 const headers = parseJsonObject(config.headersText)
 const requestUrl = config.method === 'GET' ? buildGetUrl(config.url, payload) : config.url
-const runDir = path.join(process.cwd(), 'output', 'experiments', 'github-repo-search', String(Date.now()))
+const runDir = path.join(process.cwd(), 'output', 'experiments', config.id || 'real-site', String(Date.now()))
 
 fs.mkdirSync(runDir, { recursive: true })
 

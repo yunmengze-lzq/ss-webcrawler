@@ -7,6 +7,7 @@ import { log } from './log/log'
 import { spawnPython } from './pythonBridge'
 import ExcelJS from 'exceljs'
 import { resolveMainWindowTarget } from './windowTarget'
+import { toIpcSafe } from '../src/crawlerConfigUtils'
 
 const USER_DATA_DIR = path.join(app.getPath('appData'), 'ts-agent')
 app.setName('ts-agent')
@@ -521,134 +522,141 @@ ipcMain.handle('crawler-config:refresh-cookie', async (_e, config: CrawlerConfig
 })
 
 ipcMain.handle('crawler-config:run', async (_e, config: CrawlerConfig, runtimeParams: Record<string, any> = {}) => {
-  if (!config.url || !/^https?:\/\//i.test(config.url)) {
-    return { success: false, error: '请填写完整的 http/https 接口 URL' }
-  }
-
-  const method = config.method || 'POST'
-  const headers = parseHeaders(config.headersText, config.cookie)
-  const basePayload = applyRuntimeParams(parseJsonObject(config.payloadText, {}), runtimeParams)
-  const requestHeaders = {
-      'Content-Type': 'application/json;charset=UTF-8',
-      ...headers,
-  }
-
-  const requestOnce = async (payload: Record<string, any>) => {
-    const response = await fetch(buildRequestUrl(config.url, method, payload), {
-      method,
-      headers: requestHeaders,
-      ...(method === 'GET' ? {} : { body: JSON.stringify(payload) }),
-      signal: AbortSignal.timeout(60_000),
-    })
-    const responseText = await response.text()
-    let raw: any
-    try {
-      raw = JSON.parse(responseText)
-    } catch {
-      raw = { text: responseText }
+  try {
+    if (!config.url || !/^https?:\/\//i.test(config.url)) {
+      return { success: false, error: '请填写完整的 http/https 接口 URL' }
     }
-    return { response, raw }
-  }
 
-  const allRows: any[] = []
-  const rawPages: any[] = []
-  let lastStatus = 0
-  let lastOk = false
-  let fetchedTotal = 0
-  const maxPages = Math.max(1, Number(config.maxPages || 1))
+    const method = config.method || 'POST'
+    const headers = parseHeaders(config.headersText, config.cookie)
+    const basePayload = applyRuntimeParams(parseJsonObject(config.payloadText, {}), runtimeParams)
+    const requestHeaders = {
+        'Content-Type': 'application/json;charset=UTF-8',
+        ...headers,
+    }
 
-  if (config.paginationEnabled) {
-    for (let page = 1; page <= maxPages; page += 1) {
-      const payload = JSON.parse(JSON.stringify(basePayload))
-      if (config.pageField) setByPath(payload, config.pageField, page)
-      if (config.pageSizeField) setByPath(payload, config.pageSizeField, Number(config.pageSize || 100))
-      const { response, raw } = await requestOnce(payload)
+    const requestOnce = async (payload: Record<string, any>) => {
+      const response = await fetch(buildRequestUrl(config.url, method, payload), {
+        method,
+        headers: requestHeaders,
+        ...(method === 'GET' ? {} : { body: JSON.stringify(payload) }),
+        signal: AbortSignal.timeout(60_000),
+      })
+      const responseText = await response.text()
+      let raw: any
+      try {
+        raw = JSON.parse(responseText)
+      } catch {
+        raw = { text: responseText }
+      }
+      return { response, raw }
+    }
+
+    const allRows: any[] = []
+    const rawPages: any[] = []
+    let lastStatus = 0
+    let lastOk = false
+    let fetchedTotal = 0
+    const maxPages = Math.max(1, Number(config.maxPages || 1))
+
+    if (config.paginationEnabled) {
+      for (let page = 1; page <= maxPages; page += 1) {
+        const payload = JSON.parse(JSON.stringify(basePayload))
+        if (config.pageField) setByPath(payload, config.pageField, page)
+        if (config.pageSizeField) setByPath(payload, config.pageSizeField, Number(config.pageSize || 100))
+        const { response, raw } = await requestOnce(payload)
+        lastStatus = response.status
+        lastOk = response.ok
+        rawPages.push({ page, payload, raw })
+        const pageRows = normalizeRows(raw, config)
+        allRows.push(...pageRows)
+        fetchedTotal += pageRows.length
+
+        const total = Number(getByPath(raw, config.totalPath || ''))
+        if (config.stopMode === 'total-count' && total && fetchedTotal >= total) break
+        if (config.stopMode === 'empty-list' && pageRows.length === 0) break
+        if (config.stopMode === 'max-pages') continue
+      }
+    } else {
+      const { response, raw } = await requestOnce(basePayload)
       lastStatus = response.status
       lastOk = response.ok
-      rawPages.push({ page, payload, raw })
-      const pageRows = normalizeRows(raw, config)
-      allRows.push(...pageRows)
-      fetchedTotal += pageRows.length
-
-      const total = Number(getByPath(raw, config.totalPath || ''))
-      if (config.stopMode === 'total-count' && total && fetchedTotal >= total) break
-      if (config.stopMode === 'empty-list' && pageRows.length === 0) break
-      if (config.stopMode === 'max-pages') continue
+      rawPages.push({ payload: basePayload, raw })
+      allRows.push(...normalizeRows(raw, config))
     }
-  } else {
-    const { response, raw } = await requestOnce(basePayload)
-    lastStatus = response.status
-    lastOk = response.ok
-    rawPages.push({ payload: basePayload, raw })
-    allRows.push(...normalizeRows(raw, config))
-  }
 
-  const raw = config.paginationEnabled ? { pages: rawPages } : rawPages[0]?.raw
-  const rows = allRows
-  const runId = `${safeFileName(config.system || config.name)}_${Date.now()}`
-  const dir = resolveRunDir(config, runId)
-  ensureDir(dir)
+    const raw = config.paginationEnabled ? { pages: rawPages } : rawPages[0]?.raw
+    const rows = allRows
+    const runId = `${safeFileName(config.system || config.name)}_${Date.now()}`
+    const dir = resolveRunDir(config, runId)
+    ensureDir(dir)
 
-  const rawPath = path.join(dir, 'raw.json')
-  const rowsPath = path.join(dir, 'rows.json')
-  const excelPath = path.join(dir, 'rows.xlsx')
-  const metaPath = path.join(dir, 'meta.json')
+    const rawPath = path.join(dir, 'raw.json')
+    const rowsPath = path.join(dir, 'rows.json')
+    const excelPath = path.join(dir, 'rows.xlsx')
+    const metaPath = path.join(dir, 'meta.json')
 
-  fs.writeFileSync(rawPath, JSON.stringify(raw, null, 2), 'utf-8')
-  fs.writeFileSync(rowsPath, JSON.stringify(rows, null, 2), 'utf-8')
+    fs.writeFileSync(rawPath, JSON.stringify(raw, null, 2), 'utf-8')
+    fs.writeFileSync(rowsPath, JSON.stringify(rows, null, 2), 'utf-8')
 
-  const storageTarget = config.storageTarget || 'excel'
-  const files: Record<string, string> = { rawPath, rowsPath, metaPath }
-  let databaseResult: any = null
+    const storageTarget = config.storageTarget || 'excel'
+    const files: Record<string, string> = { rawPath, rowsPath, metaPath }
+    let databaseResult: any = null
 
-  if (storageTarget === 'excel' || storageTarget === 'both') {
-    await writeRowsToExcel(excelPath, rows)
-    files.excelPath = excelPath
-  }
+    if (storageTarget === 'excel' || storageTarget === 'both') {
+      await writeRowsToExcel(excelPath, rows)
+      files.excelPath = excelPath
+    }
 
-  if (storageTarget === 'database' || storageTarget === 'both') {
-    databaseResult = await writeRowsToDatabase(config, rows)
-    files.databasePath = databaseResult.db_path
-  }
+    if (storageTarget === 'database' || storageTarget === 'both') {
+      databaseResult = await writeRowsToDatabase(config, rows)
+      files.databasePath = databaseResult.db_path
+    }
 
-  fs.writeFileSync(metaPath, JSON.stringify({
-    configId: config.id,
-    name: config.name,
-    system: config.system,
-    url: config.url,
-    method,
-    storageTarget,
-    outputDir: config.outputDir,
-    databasePath: config.databasePath || defaultDbPath(),
-    tableName: config.tableName,
-    primaryKey: config.primaryKey,
-    writeMode: config.writeMode,
-    status: lastStatus,
-    ok: lastOk,
-    count: rows.length,
-    paginationEnabled: config.paginationEnabled,
-    pages: rawPages.length,
-    database: databaseResult,
-    createdAt: new Date().toISOString(),
-  }, null, 2), 'utf-8')
+    fs.writeFileSync(metaPath, JSON.stringify({
+      configId: config.id,
+      name: config.name,
+      system: config.system,
+      url: config.url,
+      method,
+      storageTarget,
+      outputDir: config.outputDir,
+      databasePath: config.databasePath || defaultDbPath(),
+      tableName: config.tableName,
+      primaryKey: config.primaryKey,
+      writeMode: config.writeMode,
+      status: lastStatus,
+      ok: lastOk,
+      count: rows.length,
+      paginationEnabled: config.paginationEnabled,
+      pages: rawPages.length,
+      database: databaseResult,
+      createdAt: new Date().toISOString(),
+    }, null, 2), 'utf-8')
 
-  if (config.id) {
-    ensureDir(crawlerConfigDir())
-    const saved = { ...config, lastRunAt: new Date().toISOString(), lastCount: rows.length }
-    fs.writeFileSync(path.join(crawlerConfigDir(), `${config.id}.json`), JSON.stringify(saved, null, 2), 'utf-8')
-  }
+    if (config.id) {
+      ensureDir(crawlerConfigDir())
+      const saved = { ...config, lastRunAt: new Date().toISOString(), lastCount: rows.length }
+      fs.writeFileSync(path.join(crawlerConfigDir(), `${config.id}.json`), JSON.stringify(saved, null, 2), 'utf-8')
+    }
 
-  return {
-    success: lastOk,
-    status: lastStatus,
-    count: rows.length,
-    files,
-    sample: rows.slice(0, 5),
-    storageAdvice: storageTarget === 'database'
-      ? '已写入数据库，并保留 raw.json/rows.json 用于追溯。'
-      : storageTarget === 'both'
-        ? '已同时保存 Excel 和写入数据库。'
-        : '已保存 Excel，并保留 raw.json/rows.json 用于追溯。',
+    return toIpcSafe({
+      success: lastOk,
+      status: lastStatus,
+      count: rows.length,
+      files,
+      sample: rows.slice(0, 5),
+      storageAdvice: storageTarget === 'database'
+        ? '已写入数据库，并保留 raw.json/rows.json 用于追溯。'
+        : storageTarget === 'both'
+          ? '已同时保存 Excel 和写入数据库。'
+          : '已保存 Excel，并保留 raw.json/rows.json 用于追溯。',
+    })
+  } catch (err: any) {
+    return toIpcSafe({
+      success: false,
+      error: err?.message || String(err),
+    })
   }
 })
 

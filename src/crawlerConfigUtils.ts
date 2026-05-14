@@ -39,6 +39,38 @@ export const normalizeConfig = (config: Partial<CrawlerConfig>): CrawlerConfig =
 
 export const builtInConfigs = (): CrawlerConfig[] => [
   normalizeConfig({
+    id: 'real_jsonplaceholder_posts',
+    name: '真实网站案例-JSONPlaceholder文章',
+    system: 'custom',
+    category: '真实网站测试',
+    description: '调用 JSONPlaceholder 公开文章 API，返回根数组，适合作为第一条真实取数跑通案例。',
+    method: 'GET',
+    url: 'https://jsonplaceholder.typicode.com/posts',
+    headersText: '{\n  "Accept": "application/json"\n}',
+    cookie: '',
+    cookieRefreshMode: 'manual',
+    cookieExpireHours: 4,
+    cookieUpdatedAt: '',
+    loginUrl: '',
+    payloadText: '{}',
+    payloadFields: [],
+    paginationEnabled: false,
+    pageField: '',
+    pageSizeField: '',
+    pageSize: 100,
+    totalPath: '',
+    maxPages: 1,
+    stopMode: 'max-pages',
+    listPath: '',
+    fieldsText: '{\n  "文章ID": "id",\n  "用户ID": "userId",\n  "标题": "title",\n  "正文": "body"\n}',
+    storageTarget: 'excel',
+    outputDir: 'C:\\Users\\61081\\Documents\\New project\\output\\real-site-test',
+    databasePath: '',
+    tableName: 'public_posts',
+    primaryKey: '文章ID',
+    writeMode: 'append',
+  }),
+  normalizeConfig({
     id: 'real_github_repo_search',
     name: '真实网站案例-GitHub仓库搜索',
     system: 'custom',
@@ -169,3 +201,5 @@ export const buildGetUrl = (url: string, payload: Record<string, unknown>) => {
   }
   return next.toString()
 }
+
+export const toIpcSafe = <T>(value: T): T => JSON.parse(JSON.stringify(value))

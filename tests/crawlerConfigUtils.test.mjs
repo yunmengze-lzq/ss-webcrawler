@@ -5,14 +5,16 @@ import {
   builtInConfigs,
   buildGetUrl,
   extractRowsFromResponse,
+  toIpcSafe,
   selectInitialConfig,
   withBuiltInConfigs,
 } from '../src/crawlerConfigUtils.ts'
 
-test('built-in examples include github search and nested json users', () => {
+test('built-in examples include runnable real website cases', () => {
   const names = builtInConfigs().map(item => item.name)
 
   assert.deepEqual(names, [
+    '真实网站案例-JSONPlaceholder文章',
     '真实网站案例-GitHub仓库搜索',
     '真实网站案例-用户嵌套数据',
   ])
@@ -54,10 +56,10 @@ test('built-in real website example is always available before saved configs', (
 
   const configs = withBuiltInConfigs(saved)
 
-  assert.equal(configs[0].id, 'real_github_repo_search')
-  assert.equal(configs[0].name, '真实网站案例-GitHub仓库搜索')
-  assert.equal(configs[1].id, 'real_jsonplaceholder_users')
-  assert.equal(configs[2].id, 'custom_saved')
+  assert.equal(configs[0].id, 'real_jsonplaceholder_posts')
+  assert.equal(configs[1].id, 'real_github_repo_search')
+  assert.equal(configs[2].id, 'real_jsonplaceholder_users')
+  assert.equal(configs[3].id, 'custom_saved')
 })
 
 test('selectInitialConfig chooses the built-in case when active config is missing', () => {
@@ -65,7 +67,7 @@ test('selectInitialConfig chooses the built-in case when active config is missin
 
   const active = selectInitialConfig(configs, { id: 'deleted_config' })
 
-  assert.equal(active?.id, 'real_github_repo_search')
+  assert.equal(active?.id, 'real_jsonplaceholder_posts')
 })
 
 test('extractRowsFromResponse maps nested json fields to flat rows', () => {
@@ -99,4 +101,22 @@ test('buildGetUrl writes payload fields into query string', () => {
   })
 
   assert.equal(url, 'https://api.github.com/search/repositories?sort=updated&q=web+crawler+language%3ATypeScript&per_page=10')
+})
+
+test('toIpcSafe converts non-cloneable values to plain json', () => {
+  const safe = toIpcSafe({
+    ok: true,
+    fn: () => 'drop',
+    nested: {
+      value: undefined,
+      error: new Error('boom'),
+    },
+  })
+
+  assert.deepEqual(safe, {
+    ok: true,
+    nested: {
+      error: {},
+    },
+  })
 })
