@@ -1,0 +1,139 @@
+import type { CrawlerConfig } from './types'
+
+export const blankConfig = (): CrawlerConfig => ({
+  name: '计量负载率接口',
+  system: 'load_meter',
+  category: '运行监测',
+  description: '',
+  method: 'POST',
+  url: '',
+  headersText: '{\n  "Accept": "application/json, text/javascript, */*; q=0.01",\n  "Content-Type": "application/json;charset=UTF-8"\n}',
+  cookie: '',
+  cookieRefreshMode: 'manual',
+  cookieExpireHours: 4,
+  cookieUpdatedAt: '',
+  loginUrl: '',
+  payloadText: '{\n  "pageNo": 1,\n  "pageSize": 100\n}',
+  payloadFields: [],
+  paginationEnabled: true,
+  pageField: 'pageNo',
+  pageSizeField: 'pageSize',
+  pageSize: 100,
+  totalPath: 'data.total',
+  maxPages: 100,
+  stopMode: 'empty-list',
+  listPath: 'data.list',
+  fieldsText: '{\n  "ts_id": "stationId",\n  "record_date": "date",\n  "value": "value"\n}',
+  storageTarget: 'excel',
+  outputDir: '',
+  databasePath: '',
+  tableName: 'load_meter_daily',
+  primaryKey: 'ts_id',
+  writeMode: 'append',
+})
+
+export const normalizeConfig = (config: Partial<CrawlerConfig>): CrawlerConfig => ({
+  ...blankConfig(),
+  ...config,
+})
+
+export const builtInConfigs = (): CrawlerConfig[] => [
+  normalizeConfig({
+    id: 'real_github_repo_search',
+    name: '真实网站案例-GitHub仓库搜索',
+    system: 'custom',
+    category: '真实网站测试',
+    description: '调用 GitHub 公开搜索 API，搜索 TypeScript 爬虫相关仓库，验证真实网站取数、嵌套字段映射和 Excel 保存。',
+    method: 'GET',
+    url: 'https://api.github.com/search/repositories',
+    headersText: '{\n  "Accept": "application/vnd.github+json",\n  "User-Agent": "ss-webcrawler-test"\n}',
+    cookie: '',
+    cookieRefreshMode: 'manual',
+    cookieExpireHours: 4,
+    cookieUpdatedAt: '',
+    loginUrl: '',
+    payloadText: '{\n  "q": "web crawler language:TypeScript",\n  "sort": "stars",\n  "order": "desc",\n  "per_page": 10\n}',
+    payloadFields: [],
+    paginationEnabled: false,
+    pageField: '',
+    pageSizeField: '',
+    pageSize: 10,
+    totalPath: 'total_count',
+    maxPages: 1,
+    stopMode: 'max-pages',
+    listPath: 'items',
+    fieldsText: '{\n  "仓库名": "full_name",\n  "作者": "owner.login",\n  "地址": "html_url",\n  "描述": "description",\n  "Star数": "stargazers_count",\n  "语言": "language",\n  "更新时间": "updated_at"\n}',
+    storageTarget: 'excel',
+    outputDir: 'C:\\Users\\61081\\Documents\\New project\\output\\real-site-test',
+    databasePath: '',
+    tableName: 'github_repo_search',
+    primaryKey: '仓库名',
+    writeMode: 'append',
+  }),
+]
+
+export const withBuiltInConfigs = (items: Partial<CrawlerConfig>[]): CrawlerConfig[] => {
+  const normalized = items.map(normalizeConfig)
+  const existing = new Set(normalized.map(item => item.id).filter(Boolean))
+  return [
+    ...builtInConfigs().filter(item => !existing.has(item.id)),
+    ...normalized,
+  ]
+}
+
+export const selectInitialConfig = (
+  configs: CrawlerConfig[],
+  activeConfig: Partial<CrawlerConfig> | null | undefined,
+) => {
+  const activeExists = configs.some(item => item.id === activeConfig?.id)
+  return activeConfig && activeExists
+    ? configs.find(item => item.id === activeConfig.id) || configs[0] || null
+    : configs[0] || null
+}
+
+export const getByPath = (source: unknown, path = ''): unknown => {
+  if (!path.trim()) return source
+  return path
+    .split('.')
+    .filter(Boolean)
+    .reduce<unknown>((current, key) => {
+      if (current == null || typeof current !== 'object') return undefined
+      return (current as Record<string, unknown>)[key]
+    }, source)
+}
+
+export const parseJsonObject = (text = ''): Record<string, unknown> => {
+  const trimmed = text.trim()
+  if (!trimmed) return {}
+  const parsed = JSON.parse(trimmed)
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+}
+
+export const extractRowsFromResponse = (
+  response: unknown,
+  config: Pick<CrawlerConfig, 'listPath' | 'fieldsText'>,
+) => {
+  const list = getByPath(response, config.listPath)
+  const rows = Array.isArray(list) ? list : []
+  const fields = parseJsonObject(config.fieldsText)
+  const entries = Object.entries(fields)
+
+  if (!entries.length) return rows
+
+  return rows.map(row => {
+    const mapped: Record<string, unknown> = {}
+    for (const [label, path] of entries) {
+      mapped[label] = getByPath(row, String(path))
+    }
+    return mapped
+  })
+}
+
+export const buildGetUrl = (url: string, payload: Record<string, unknown>) => {
+  const next = new URL(url)
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === undefined || value === null || value === '') continue
+    next.searchParams.set(key, String(value))
+  }
+  return next.toString()
+}

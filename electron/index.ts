@@ -13,6 +13,7 @@ app.setPath('userData', USER_DATA_DIR)
 
 const isDev = !app.isPackaged
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL || 'http://127.0.0.1:5178'
+const distIndex = () => path.join(__dirname, '../dist/index.html')
 
 const resolvePreload = (name: string) => {
   const compiled = path.join(__dirname, 'preload', name, 'index.js')
@@ -93,11 +94,11 @@ const createMainWindow = () => {
       ...(fs.existsSync(preloadJs) ? { preload: preloadJs } : {}),
     },
   })
-  if (isDev) {
+  if (isDev && /^https?:\/\//i.test(VITE_DEV_URL)) {
     mainWin.loadURL(VITE_DEV_URL)
     mainWin.webContents.openDevTools()
   } else {
-    mainWin.loadFile(path.join(__dirname, '../dist/index.html'))
+    mainWin.loadFile(distIndex())
   }
 }
 

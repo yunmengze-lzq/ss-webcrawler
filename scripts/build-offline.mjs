@@ -46,6 +46,9 @@ fs.symlinkSync(nodeModules, buildNodeModules, 'junction')
 
 run(process.execPath, [path.join(buildNodeModules, 'vite', 'bin', 'vite.js'), 'build', '--config', 'vite.config.mjs'], buildRoot)
 
+for (const dir of ['dist', 'dist-electron']) {
+  fs.rmSync(path.join(sourceRoot, dir), { recursive: true, force: true })
+}
 copyRecursive(path.join(buildRoot, 'dist'), path.join(sourceRoot, 'dist'))
 copyRecursive(path.join(buildRoot, 'dist-electron'), path.join(sourceRoot, 'dist-electron'))
 

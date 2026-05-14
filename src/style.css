@@ -1,7 +1,7 @@
 :root {
-  font-family: "Microsoft YaHei", Arial, sans-serif;
-  color: #172033;
-  background: #f3f6fa;
+  font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+  color: #111827;
+  background: #f7f9fc;
 }
 
 * { box-sizing: border-box; }
@@ -23,17 +23,17 @@ button:disabled {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 292px 1fr;
   min-height: 100vh;
 }
 
 .nav-rail {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 20px;
   padding: 22px;
-  border-right: 1px solid #dde5ef;
-  background: #fbfcfe;
+  border-right: 1px solid #e2e8f0;
+  background: #ffffff;
 }
 
 .brand {
@@ -57,22 +57,66 @@ h1, h2, h3, p { margin-top: 0; }
 .brand h1 { margin: 0 0 3px; font-size: 18px; }
 .brand p, .page-head p, .interface-card p, .rail-note span { color: #66758a; line-height: 1.6; }
 
-.nav-rail nav {
+.toolbox-nav {
   display: grid;
   gap: 8px;
 }
 
-.nav-rail nav button {
-  height: 38px;
-  padding: 0 12px;
+.toolbox-nav button {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
+  min-height: 56px;
+  padding: 9px 10px;
   text-align: left;
+  align-items: center;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
 }
 
-.nav-rail nav .active {
-  border-color: #1d4ed8;
-  background: #eaf1ff;
-  color: #1d4ed8;
+.toolbox-nav button:not(:disabled):hover {
+  border-color: #93c5fd;
+  background: #f8fbff;
+}
+
+.toolbox-nav .active {
+  border-color: #1e40af;
+  background: #eff6ff;
+  color: #1e40af;
   font-weight: 700;
+}
+
+.toolbox-nav strong,
+.toolbox-nav small {
+  display: block;
+}
+
+.toolbox-nav small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.toolbox-nav button:disabled .tool-icon,
+.toolbox-nav button:disabled small {
+  opacity: .64;
+}
+
+.tool-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.toolbox-nav .active .tool-icon {
+  background: #1e40af;
+  color: #fff;
 }
 
 .rail-note {
@@ -89,7 +133,7 @@ h1, h2, h3, p { margin-top: 0; }
 }
 
 .workspace {
-  padding: 24px;
+  padding: 28px;
   min-width: 0;
 }
 
@@ -113,7 +157,8 @@ h1, h2, h3, p { margin-top: 0; }
 .modal-head h2,
 .panel-head h2 {
   margin-bottom: 4px;
-  font-size: 28px;
+  font-size: 30px;
+  letter-spacing: 0;
 }
 
 .primary {
@@ -134,6 +179,35 @@ h1, h2, h3, p { margin-top: 0; }
   margin-bottom: 16px;
 }
 
+.toolbox-status {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.toolbox-status div {
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.toolbox-status strong,
+.toolbox-status span {
+  display: block;
+}
+
+.toolbox-status strong {
+  font-size: 22px;
+}
+
+.toolbox-status span {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
 .pipeline-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -143,7 +217,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 .pipeline-strip div {
   padding: 12px;
-  border: 1px solid #dbe3ee;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #fff;
 }
@@ -568,8 +642,8 @@ label {
     border-right: 0;
     border-bottom: 1px solid #dde5ef;
   }
-  .nav-rail nav {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .toolbox-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .result-panel {
     position: static;
@@ -580,6 +654,7 @@ label {
 @media (max-width: 760px) {
   .toolbar,
   .pipeline-strip,
+  .toolbox-status,
   .form-grid,
   .payload-field,
   .storage-options,

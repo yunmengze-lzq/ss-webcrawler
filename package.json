@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "vite --config vite.config.mjs",
     "build": "node scripts/build-offline.mjs",
+    "test": "node --test --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/*.test.mjs",
+    "experiment:github": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/run-real-site-experiment.mjs",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview --config vite.config.mjs",
     "build:vite": "vite build --config vite.config.mjs",

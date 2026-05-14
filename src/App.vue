@@ -9,28 +9,44 @@
         </div>
       </div>
 
-      <nav>
-        <button class="active">接口取数</button>
-        <button disabled>数据校验</button>
-        <button disabled>智能体调用</button>
-        <button disabled>定时任务</button>
+      <nav class="toolbox-nav">
+        <button
+          v-for="tool in toolboxItems"
+          :key="tool.key"
+          :class="{ active: activeTool === tool.key }"
+          :disabled="tool.disabled"
+          @click="activeTool = tool.key"
+        >
+          <span class="tool-icon">{{ tool.icon }}</span>
+          <span>
+            <strong>{{ tool.name }}</strong>
+            <small>{{ tool.caption }}</small>
+          </span>
+        </button>
       </nav>
 
       <div class="rail-note">
-        <strong>主流程</strong>
-        <span>接口爬虫优先，RPA 只作为导出 Excel/PDF 的兜底能力。</span>
+        <strong>工具箱原则</strong>
+        <span>接口资产优先沉淀；RPA 只处理登录、Cookie 更新和文件导出兜底。</span>
       </div>
     </aside>
 
     <section class="workspace">
       <header class="page-head">
         <div>
-          <p class="eyebrow">Interface Assets</p>
-          <h2>已保存接口</h2>
-          <p>选择已有接口直接运行，或新建接口沉淀为可复用的数据源。</p>
+          <p class="eyebrow">Crawler Toolbox</p>
+          <h2>接口取数工作台</h2>
+          <p>管理可复用接口，完成真实取数、字段解析、Excel/SQLite 落盘和实验验证。</p>
         </div>
         <button class="primary" @click="openCreate">新建接口</button>
       </header>
+
+      <section class="toolbox-status">
+        <div v-for="item in toolboxStats" :key="item.label">
+          <strong>{{ item.value }}</strong>
+          <span>{{ item.label }}</span>
+        </div>
+      </section>
 
       <section class="toolbar">
         <input v-model="keyword" placeholder="搜索接口名称、系统、分类" />
@@ -47,17 +63,9 @@
       </section>
 
       <section class="pipeline-strip">
-        <div>
-          <strong>1. JSON 原始响应</strong>
-          <span>每次运行都保留 raw.json</span>
-        </div>
-        <div>
-          <strong>2. 字段映射</strong>
-          <span>按列表路径和映射生成 rows.json</span>
-        </div>
-        <div>
-          <strong>3. 结果填充</strong>
-          <span>按配置写入 Excel、SQLite 或两者</span>
+        <div v-for="step in pipelineSteps" :key="step.title">
+          <strong>{{ step.title }}</strong>
+          <span>{{ step.caption }}</span>
         </div>
       </section>
 
@@ -129,6 +137,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import InterfaceConfigModal from './components/InterfaceConfigModal.vue'
 import RunParamsModal from './components/RunParamsModal.vue'
 import RunResultPanel from './components/RunResultPanel.vue'
+import { blankConfig, normalizeConfig, selectInitialConfig, withBuiltInConfigs } from './crawlerConfigUtils'
 import type { CrawlerConfig, RunResult, RuntimeParams, StorageTarget } from './types'
 
 declare global {
@@ -156,6 +165,7 @@ const systems = [
 const previewStorageKey = 'ts-agent-crawler-configs'
 const configs = ref<CrawlerConfig[]>([])
 const activeConfig = ref<CrawlerConfig | null>(null)
+const activeTool = ref('interfaces')
 const modalOpen = ref(false)
 const runModalOpen = ref(false)
 const running = ref(false)
@@ -166,36 +176,32 @@ const keyword = ref('')
 const systemFilter = ref('all')
 const storageFilter = ref<'all' | StorageTarget>('all')
 
-const blankConfig = (): CrawlerConfig => ({
-  name: '计量负载率接口',
-  system: 'load_meter',
-  category: '运行监测',
-  description: '',
-  method: 'POST',
-  url: '',
-  headersText: '{\n  "Accept": "application/json, text/javascript, */*; q=0.01",\n  "Content-Type": "application/json;charset=UTF-8"\n}',
-  cookie: '',
-  cookieRefreshMode: 'manual',
-  cookieExpireHours: 4,
-  cookieUpdatedAt: '',
-  loginUrl: '',
-  payloadText: '{\n  "pageNo": 1,\n  "pageSize": 100\n}',
-  payloadFields: [],
-  paginationEnabled: true,
-  pageField: 'pageNo',
-  pageSizeField: 'pageSize',
-  pageSize: 100,
-  totalPath: 'data.total',
-  maxPages: 100,
-  stopMode: 'empty-list',
-  listPath: 'data.list',
-  fieldsText: '{\n  "ts_id": "stationId",\n  "record_date": "date",\n  "value": "value"\n}',
-  storageTarget: 'excel',
-  outputDir: '',
-  databasePath: '',
-  tableName: 'load_meter_daily',
-  primaryKey: 'ts_id',
-  writeMode: 'append',
+const toolboxItems = [
+  { key: 'interfaces', name: '接口取数', caption: '配置与运行', icon: 'I', disabled: false },
+  { key: 'parser', name: '数据解析', caption: '字段映射', icon: 'P', disabled: true },
+  { key: 'storage', name: '存储管理', caption: 'Excel / SQLite', icon: 'S', disabled: true },
+  { key: 'cookie', name: 'Cookie/RPA', caption: '登录兜底', icon: 'C', disabled: true },
+  { key: 'lab', name: '实验测试', caption: '真实案例', icon: 'T', disabled: true },
+  { key: 'tasks', name: '任务记录', caption: '定时与日志', icon: 'L', disabled: true },
+]
+
+const pipelineSteps = [
+  { title: '1. 原始响应', caption: '保留 raw.json，便于追溯和复盘' },
+  { title: '2. 字段映射', caption: '按列表路径和嵌套字段生成 rows.json' },
+  { title: '3. 数据落盘', caption: '按配置写入 Excel、SQLite 或两者' },
+]
+
+const toolboxStats = computed(() => {
+  const total = configs.value.length
+  const reusable = configs.value.filter(item => item.url).length
+  const withPayload = configs.value.filter(item => item.payloadFields?.length).length
+  const withDatabase = configs.value.filter(item => item.storageTarget === 'database' || item.storageTarget === 'both').length
+  return [
+    { label: '接口资产', value: total },
+    { label: '可运行接口', value: reusable },
+    { label: '运行时载荷', value: withPayload },
+    { label: '数据库写入', value: withDatabase },
+  ]
 })
 
 const editingConfig = reactive<CrawlerConfig>(blankConfig())
@@ -212,60 +218,20 @@ const filteredConfigs = computed(() => {
 })
 
 const clone = (config: CrawlerConfig) => JSON.parse(JSON.stringify(config)) as CrawlerConfig
-const normalizeConfig = (config: CrawlerConfig): CrawlerConfig => ({ ...blankConfig(), ...config })
-
-const builtInConfigs = (): CrawlerConfig[] => [
-  normalizeConfig({
-    id: 'real_github_repo_search',
-    name: '真实网站案例-GitHub仓库搜索',
-    system: 'custom',
-    category: '真实网站测试',
-    description: '调用 GitHub 公开搜索 API，搜索 TypeScript 爬虫相关仓库，验证真实网站取数、嵌套字段映射和 Excel 保存。',
-    method: 'GET',
-    url: 'https://api.github.com/search/repositories',
-    headersText: '{\n  "Accept": "application/vnd.github+json",\n  "User-Agent": "ss-webcrawler-test"\n}',
-    cookie: '',
-    cookieRefreshMode: 'manual',
-    cookieExpireHours: 4,
-    cookieUpdatedAt: '',
-    loginUrl: '',
-    payloadText: '{\n  "q": "web crawler language:TypeScript",\n  "sort": "stars",\n  "order": "desc",\n  "per_page": 10\n}',
-    payloadFields: [],
-    paginationEnabled: false,
-    pageField: '',
-    pageSizeField: '',
-    pageSize: 10,
-    totalPath: 'total_count',
-    maxPages: 1,
-    stopMode: 'max-pages',
-    listPath: 'items',
-    fieldsText: '{\n  "仓库名": "full_name",\n  "作者": "owner.login",\n  "地址": "html_url",\n  "描述": "description",\n  "Star数": "stargazers_count",\n  "语言": "language",\n  "更新时间": "updated_at"\n}',
-    storageTarget: 'excel',
-    outputDir: 'C:\\Users\\61081\\Documents\\New project\\output\\real-site-test',
-    databasePath: '',
-    tableName: 'github_repo_search',
-    primaryKey: '仓库名',
-    writeMode: 'append',
-  }),
-]
-
-const withBuiltInConfigs = (items: CrawlerConfig[]) => {
-  const normalized = items.map(normalizeConfig)
-  const existing = new Set(normalized.map(item => item.id))
-  return [
-    ...builtInConfigs().filter(item => !existing.has(item.id)),
-    ...normalized,
-  ]
-}
 
 const refreshConfigs = async () => {
-  if (window.ipcApi?.listCrawlerConfigs) {
-    configs.value = withBuiltInConfigs(await window.ipcApi.listCrawlerConfigs())
-  } else {
-    configs.value = withBuiltInConfigs(JSON.parse(localStorage.getItem(previewStorageKey) || '[]'))
+  let savedConfigs: CrawlerConfig[] = []
+  try {
+    if (window.ipcApi?.listCrawlerConfigs) {
+      savedConfigs = await window.ipcApi.listCrawlerConfigs()
+    } else {
+      savedConfigs = JSON.parse(localStorage.getItem(previewStorageKey) || '[]')
+    }
+  } catch (error) {
+    console.warn('读取接口配置失败，已使用内置真实网站案例。', error)
   }
-  const activeExists = configs.value.some(item => item.id === activeConfig.value?.id)
-  if ((!activeConfig.value || !activeExists) && configs.value.length) activeConfig.value = configs.value[0]
+  configs.value = withBuiltInConfigs(Array.isArray(savedConfigs) ? savedConfigs : [])
+  activeConfig.value = selectInitialConfig(configs.value, activeConfig.value)
 }
 
 const persistPreview = (saved: CrawlerConfig) => {

@@ -8,6 +8,7 @@ dev-server*.log
 ui-preview*.log
 release/
 out/
+output/
 *.zip
 *.7z
 *.rar
