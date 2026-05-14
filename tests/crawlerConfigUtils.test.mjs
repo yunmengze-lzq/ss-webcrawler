@@ -2,9 +2,11 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  applyRuntimeParams,
   builtInConfigs,
   buildGetUrl,
   extractRowsFromResponse,
+  parseHeaders,
   toIpcSafe,
   selectInitialConfig,
   withBuiltInConfigs,
@@ -101,6 +103,47 @@ test('buildGetUrl writes payload fields into query string', () => {
   })
 
   assert.equal(url, 'https://api.github.com/search/repositories?sort=updated&q=web+crawler+language%3ATypeScript&per_page=10')
+})
+
+test('parseHeaders keeps json headers and injects cookie', () => {
+  const headers = parseHeaders('{\n  "Accept": "application/json",\n  "X-Token": "abc"\n}', 'sid=123; theme=dark')
+
+  assert.deepEqual(headers, {
+    Accept: 'application/json',
+    'X-Token': 'abc',
+    Cookie: 'sid=123; theme=dark',
+  })
+})
+
+test('parseHeaders supports copied browser header lines', () => {
+  const headers = parseHeaders('Accept: application/json\nX-Requested-With: XMLHttpRequest', '')
+
+  assert.deepEqual(headers, {
+    Accept: 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  })
+})
+
+test('applyRuntimeParams overwrites nested payload filters before running', () => {
+  const payload = applyRuntimeParams({
+    query: {
+      date: '2026-05-01',
+      area: { city: '广州', district: '越秀' },
+    },
+    pageNo: 1,
+  }, {
+    'query.date': '2026-05-14',
+    'query.area.district': '天河',
+    pageNo: 3,
+  })
+
+  assert.deepEqual(payload, {
+    query: {
+      date: '2026-05-14',
+      area: { city: '广州', district: '天河' },
+    },
+    pageNo: 3,
+  })
 })
 
 test('toIpcSafe converts non-cloneable values to plain json', () => {

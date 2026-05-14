@@ -1,44 +1,21 @@
 <template>
   <main class="app-shell">
-    <aside class="nav-rail">
-      <div class="brand">
-        <div class="brand-mark">A</div>
-        <div>
-          <h1>接口管理台</h1>
-          <p>面向智能体的数据源资产</p>
-        </div>
-      </div>
-
-      <nav class="toolbox-nav">
-        <button
-          v-for="tool in toolboxItems"
-          :key="tool.key"
-          :class="{ active: activeTool === tool.key }"
-          :disabled="tool.disabled"
-          @click="activeTool = tool.key"
-        >
-          <span class="tool-icon">{{ tool.icon }}</span>
-          <span>
-            <strong>{{ tool.name }}</strong>
-            <small>{{ tool.caption }}</small>
-          </span>
-        </button>
-      </nav>
-
-      <div class="rail-note">
-        <strong>工具箱原则</strong>
-        <span>接口资产优先沉淀；RPA 只处理登录、Cookie 更新和文件导出兜底。</span>
-      </div>
-    </aside>
-
     <section class="workspace">
-      <header class="page-head">
+      <header class="app-topbar">
         <div>
-          <p class="eyebrow">Crawler Toolbox</p>
-          <h2>接口取数工作台</h2>
-          <p>管理可复用接口，完成真实取数、字段解析、Excel/SQLite 落盘和实验验证。</p>
+          <div class="brand-line">
+            <span class="brand-mark">A</span>
+            <span>智能体数据接口工具箱</span>
+          </div>
+          <h1>接口资产</h1>
+          <p>创建、运行、复用智能体数据接口；Cookie、Payload、解析和存储都在一个配置流程内完成。</p>
         </div>
-        <button class="primary" @click="openCreate">新建接口</button>
+        <div class="top-actions">
+          <button @click="activeConfig && runConfig(activeConfig)" :disabled="!activeConfig || running">
+            {{ running ? '运行中...' : '运行选中接口' }}
+          </button>
+          <button class="primary" @click="openCreate">新建接口</button>
+        </div>
       </header>
 
       <section class="toolbox-status">
@@ -48,72 +25,115 @@
         </div>
       </section>
 
-      <section class="toolbar">
-        <input v-model="keyword" placeholder="搜索接口名称、系统、分类" />
-        <select v-model="systemFilter">
-          <option value="all">全部系统</option>
-          <option v-for="item in systems" :key="item.key" :value="item.key">{{ item.name }}</option>
-        </select>
-        <select v-model="storageFilter">
-          <option value="all">全部存储</option>
-          <option value="excel">Excel</option>
-          <option value="database">数据库</option>
-          <option value="both">Excel + 数据库</option>
-        </select>
-      </section>
+      <div class="asset-layout">
+        <section class="asset-list-panel">
+          <div class="asset-list-head">
+            <div>
+              <h2>已保存接口</h2>
+              <p>选择接口后在右侧查看配置、运行和输出。</p>
+            </div>
+            <button @click="openCreate">新建</button>
+          </div>
 
-      <section class="pipeline-strip">
-        <div v-for="step in pipelineSteps" :key="step.title">
-          <strong>{{ step.title }}</strong>
-          <span>{{ step.caption }}</span>
-        </div>
-      </section>
+          <section class="toolbar">
+            <input v-model="keyword" placeholder="搜索接口名称、系统、分类" />
+            <select v-model="systemFilter">
+              <option value="all">全部系统</option>
+              <option v-for="item in systems" :key="item.key" :value="item.key">{{ item.name }}</option>
+            </select>
+            <select v-model="storageFilter">
+              <option value="all">全部存储</option>
+              <option value="excel">Excel</option>
+              <option value="database">数据库</option>
+              <option value="both">Excel + 数据库</option>
+            </select>
+          </section>
 
-      <div class="content-grid">
-        <section class="interface-board">
-          <div class="empty-state" v-if="!filteredConfigs.length">
+          <div class="empty-state compact" v-if="!filteredConfigs.length">
             <h3>还没有可复用接口</h3>
-            <p>点击“新建接口”，把 Fetch/XHR 的 URL、Headers、Payload 和字段映射保存下来。</p>
+            <p>点击“新建接口”，保存 URL、Headers、Payload、字段映射和存储规则。</p>
             <button class="primary" @click="openCreate">新建第一个接口</button>
           </div>
 
-          <article
-            v-for="item in filteredConfigs"
-            :key="item.id"
-            :class="['interface-card', { active: item.id === activeConfig?.id }]"
-            @click="selectConfig(item)"
-          >
-            <div class="card-main">
-              <div>
-                <h3>{{ item.name }}</h3>
-                <p>{{ item.description || '未填写说明' }}</p>
-              </div>
+          <div class="interface-table" v-else>
+            <button
+              v-for="item in filteredConfigs"
+              :key="item.id"
+              :class="['interface-row', { active: item.id === activeConfig?.id }]"
+              @click="selectConfig(item)"
+            >
+              <span class="row-main">
+                <strong>{{ item.name }}</strong>
+                <small>{{ item.description || item.url || '未填写说明' }}</small>
+              </span>
               <span class="method">{{ item.method }}</span>
+              <span>{{ storageName(item.storageTarget) }}</span>
+              <span :class="['cookie-chip', cookieClass(item)]">{{ cookieLabel(item) }}</span>
+              <span>{{ item.lastCount ?? '-' }}</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="asset-detail-panel">
+          <div v-if="activeConfig" class="detail-card">
+            <div class="detail-head">
+              <div>
+                <p class="eyebrow">接口详情</p>
+                <h2>{{ activeConfig.name }}</h2>
+                <p>{{ activeConfig.description || '未填写说明' }}</p>
+              </div>
+              <span class="method">{{ activeConfig.method }}</span>
             </div>
 
-            <div class="meta-row">
-              <span>{{ systemName(item.system) }}</span>
-              <span>{{ item.category || '未分类' }}</span>
-              <span>{{ storageName(item.storageTarget) }}</span>
-              <span :class="cookieClass(item)">{{ cookieLabel(item) }}</span>
-              <span v-if="item.paginationEnabled">自动翻页</span>
+            <div class="detail-actions">
+              <button class="primary" @click="runConfig(activeConfig)" :disabled="running">
+                {{ runningId === activeConfig.id ? '运行中...' : '运行接口' }}
+              </button>
+              <button @click="openEdit(activeConfig)">编辑</button>
+              <button @click="duplicateConfig(activeConfig)">复制</button>
+              <button @click="refreshCookie(activeConfig)">更新 Cookie</button>
+            </div>
+
+            <div class="detail-grid">
+              <div>
+                <span>请求地址</span>
+                <strong>{{ activeConfig.url || '未填写' }}</strong>
+              </div>
+              <div>
+                <span>系统 / 分类</span>
+                <strong>{{ systemName(activeConfig.system) }} / {{ activeConfig.category || '未分类' }}</strong>
+              </div>
+              <div>
+                <span>Payload</span>
+                <strong>{{ activeConfig.payloadFields?.length ? `${activeConfig.payloadFields.length} 个运行时字段` : '固定 Payload' }}</strong>
+              </div>
+              <div>
+                <span>解析路径</span>
+                <strong>{{ activeConfig.listPath || '根数组' }}</strong>
+              </div>
+              <div>
+                <span>存储方式</span>
+                <strong>{{ storageName(activeConfig.storageTarget) }}</strong>
+              </div>
+              <div>
+                <span>SQLite 表</span>
+                <strong>{{ activeConfig.tableName || '未设置' }}</strong>
+              </div>
             </div>
 
             <div class="path-summary">
-              <p><b>Excel/JSON</b>{{ item.outputDir || '默认应用目录' }}</p>
-              <p><b>SQLite</b>{{ item.databasePath || '默认 ts_agent.db' }}</p>
+              <p><b>Excel/JSON</b>{{ activeConfig.outputDir || '默认应用目录' }}</p>
+              <p><b>SQLite</b>{{ activeConfig.databasePath || '默认 ts_agent.db' }}</p>
             </div>
+          </div>
 
-            <div class="card-actions" @click.stop>
-              <button @click="runConfig(item)" :disabled="running">{{ runningId === item.id ? '运行中...' : '运行' }}</button>
-              <button @click="refreshCookie(item)">更新Cookie</button>
-              <button @click="openEdit(item)">编辑</button>
-              <button @click="duplicateConfig(item)">复制</button>
-            </div>
-          </article>
+          <div v-else class="detail-card empty-state compact">
+            <h3>选择一个接口</h3>
+            <p>左侧选中接口后，可以查看配置摘要、运行结果和保存位置。</p>
+          </div>
+
+          <RunResultPanel :result="result" :active-name="activeConfig?.name" />
         </section>
-
-        <RunResultPanel :result="result" :active-name="activeConfig?.name" />
       </div>
     </section>
 
@@ -165,7 +185,6 @@ const systems = [
 const previewStorageKey = 'ts-agent-crawler-configs'
 const configs = ref<CrawlerConfig[]>([])
 const activeConfig = ref<CrawlerConfig | null>(null)
-const activeTool = ref('interfaces')
 const modalOpen = ref(false)
 const runModalOpen = ref(false)
 const running = ref(false)
@@ -175,21 +194,6 @@ const pendingRunConfig = ref<CrawlerConfig | null>(null)
 const keyword = ref('')
 const systemFilter = ref('all')
 const storageFilter = ref<'all' | StorageTarget>('all')
-
-const toolboxItems = [
-  { key: 'interfaces', name: '接口取数', caption: '配置与运行', icon: 'I', disabled: false },
-  { key: 'parser', name: '数据解析', caption: '字段映射', icon: 'P', disabled: true },
-  { key: 'storage', name: '存储管理', caption: 'Excel / SQLite', icon: 'S', disabled: true },
-  { key: 'cookie', name: 'Cookie/RPA', caption: '登录兜底', icon: 'C', disabled: true },
-  { key: 'lab', name: '实验测试', caption: '真实案例', icon: 'T', disabled: true },
-  { key: 'tasks', name: '任务记录', caption: '定时与日志', icon: 'L', disabled: true },
-]
-
-const pipelineSteps = [
-  { title: '1. 原始响应', caption: '保留 raw.json，便于追溯和复盘' },
-  { title: '2. 字段映射', caption: '按列表路径和嵌套字段生成 rows.json' },
-  { title: '3. 数据落盘', caption: '按配置写入 Excel、SQLite 或两者' },
-]
 
 const toolboxStats = computed(() => {
   const total = configs.value.length

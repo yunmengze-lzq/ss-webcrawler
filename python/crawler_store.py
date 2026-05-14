@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def ident(value: str) -> str:
-    cleaned = re.sub(r"[^0-9a-zA-Z_]", "_", value or "")
+    cleaned = re.sub(r"[^\w]", "_", value or "", flags=re.UNICODE)
     cleaned = cleaned.strip("_")
     if not cleaned:
         raise ValueError("数据库表名或字段名为空")
@@ -35,14 +35,16 @@ def main():
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
     columns = []
+    column_sources = {}
     seen = set()
     for row in rows:
         if not isinstance(row, dict):
             continue
         for key in row.keys():
-            col = ident(key)
+            col = ident(str(key))
             if col not in seen:
                 columns.append(col)
+                column_sources[col] = key
                 seen.add(col)
 
     if not columns:
@@ -74,7 +76,10 @@ def main():
 
         affected = 0
         for row in rows:
-            values = [normalize_value(row.get(col)) if isinstance(row, dict) else None for col in columns]
+            values = [
+                normalize_value(row.get(column_sources.get(col, col))) if isinstance(row, dict) else None
+                for col in columns
+            ]
             if mode == "upsert" and primary_key:
                 update_cols = [col for col in columns if col != primary_key]
                 update_sql = ", ".join([f'"{col}"=excluded."{col}"' for col in update_cols])

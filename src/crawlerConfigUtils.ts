@@ -166,6 +166,51 @@ export const getByPath = (source: unknown, path = ''): unknown => {
     }, source)
 }
 
+export const setByPath = (source: Record<string, unknown>, path = '', value: unknown) => {
+  const parts = path.split('.').filter(Boolean)
+  if (!parts.length) return source
+
+  let current: Record<string, unknown> = source
+  for (const part of parts.slice(0, -1)) {
+    const next = current[part]
+    if (!next || typeof next !== 'object' || Array.isArray(next)) {
+      current[part] = {}
+    }
+    current = current[part] as Record<string, unknown>
+  }
+  current[parts[parts.length - 1]] = value
+  return source
+}
+
+export const applyRuntimeParams = (
+  payload: Record<string, unknown>,
+  runtimeParams: Record<string, unknown> = {},
+) => {
+  const next = JSON.parse(JSON.stringify(payload || {}))
+  for (const [path, value] of Object.entries(runtimeParams)) {
+    if (!path || value === undefined || value === null || value === '') continue
+    setByPath(next, path, value)
+  }
+  return next
+}
+
+export const parseHeaders = (text = '', cookie = ''): Record<string, string> => {
+  const headers: Record<string, string> = {}
+  const trimmed = text.trim()
+  if (trimmed) {
+    if (trimmed.startsWith('{')) {
+      Object.assign(headers, JSON.parse(trimmed))
+    } else {
+      for (const line of trimmed.split(/\r?\n/)) {
+        const idx = line.indexOf(':')
+        if (idx > 0) headers[line.slice(0, idx).trim()] = line.slice(idx + 1).trim()
+      }
+    }
+  }
+  if (cookie.trim()) headers.Cookie = cookie.trim()
+  return headers
+}
+
 export const parseJsonObject = (text = ''): Record<string, unknown> => {
   const trimmed = text.trim()
   if (!trimmed) return {}

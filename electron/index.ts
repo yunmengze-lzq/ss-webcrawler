@@ -7,7 +7,11 @@ import { log } from './log/log'
 import { spawnPython } from './pythonBridge'
 import ExcelJS from 'exceljs'
 import { resolveMainWindowTarget } from './windowTarget'
-import { toIpcSafe } from '../src/crawlerConfigUtils'
+import {
+  applyRuntimeParams as applyCrawlerRuntimeParams,
+  parseHeaders as parseCrawlerHeaders,
+  toIpcSafe,
+} from '../src/crawlerConfigUtils'
 
 const USER_DATA_DIR = path.join(app.getPath('appData'), 'ts-agent')
 app.setName('ts-agent')
@@ -528,8 +532,8 @@ ipcMain.handle('crawler-config:run', async (_e, config: CrawlerConfig, runtimePa
     }
 
     const method = config.method || 'POST'
-    const headers = parseHeaders(config.headersText, config.cookie)
-    const basePayload = applyRuntimeParams(parseJsonObject(config.payloadText, {}), runtimeParams)
+    const headers = parseCrawlerHeaders(config.headersText, config.cookie)
+    const basePayload = applyCrawlerRuntimeParams(parseJsonObject(config.payloadText, {}), runtimeParams)
     const requestHeaders = {
         'Content-Type': 'application/json;charset=UTF-8',
         ...headers,
