@@ -19,7 +19,13 @@
             <label v-for="field in config.payloadFields" :key="field.id">
               {{ field.label || field.path }}
               <select v-if="field.type === 'select'" v-model="params[field.path]">
-                <option v-for="option in options(field.optionsText)" :key="option" :value="option">{{ option }}</option>
+                <option
+                  v-for="option in options(field.optionsText)"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
               </select>
               <input v-else v-model="params[field.path]" :type="inputType(field.type)" :required="field.required" />
             </label>
@@ -78,7 +84,16 @@ const inputType = (type: PayloadFieldType) => {
   return 'text'
 }
 
-const options = (text: string) => text.split(/\r?\n/).map(item => item.trim()).filter(Boolean)
+const options = (text: string) => text
+  .split(/\r?\n/)
+  .map(item => item.trim())
+  .filter(Boolean)
+  .map(item => {
+    const match = item.match(/^(.+?)(?:=|\|)(.+)$/)
+    return match
+      ? { label: match[1].trim(), value: match[2].trim() }
+      : { label: item, value: item }
+  })
 
 const stopModeText = computed(() => ({
   'empty-list': '空列表停止',

@@ -890,13 +890,20 @@ label {
 .asset-list-head h2,
 .detail-head h2 {
   margin-bottom: 4px;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .asset-list-head p,
 .detail-head p {
   color: #64748b;
-  line-height: 1.55;
+  line-height: 1.4;
+}
+
+.detail-head p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .asset-list-head button {
@@ -952,33 +959,34 @@ label {
 
 .asset-detail-panel {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .detail-card {
-  padding: 16px;
+  padding: 12px;
 }
 
 .detail-actions {
   justify-content: flex-start;
-  margin: 14px 0;
+  gap: 8px;
+  margin: 10px 0;
 }
 
 .detail-actions button {
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 32px;
+  padding: 0 10px;
 }
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .detail-grid div {
   min-width: 0;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #edf2f7;
   border-radius: 8px;
   background: #fbfcfe;
@@ -990,19 +998,40 @@ label {
 }
 
 .detail-grid span {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .detail-grid strong {
   overflow-wrap: anywhere;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .result-panel {
   position: static;
-  padding: 16px;
+  padding: 12px;
+}
+
+.result-panel .metric-grid {
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.result-panel .metric-grid div {
+  padding: 8px;
+}
+
+.result-panel .file-list h3,
+.result-panel .preview-box h3 {
+  margin: 8px 0 6px;
+  font-size: 13px;
+}
+
+.result-panel pre {
+  min-height: 120px;
+  max-height: 220px;
 }
 
 /* Drawer form */
@@ -1041,7 +1070,7 @@ label {
 .drawer-steps button {
   width: 100%;
   min-width: 0;
-  min-height: 52px;
+  min-height: 46px;
   padding: 9px 10px;
   text-align: left;
 }
@@ -1057,9 +1086,9 @@ label {
 }
 
 .drawer-steps span {
-  margin-top: 3px;
+  margin-top: 2px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .drawer-form {
@@ -1668,11 +1697,11 @@ button {
 }
 
 .detail-actions button {
-  min-height: 36px;
+  min-height: 32px;
 }
 
 .detail-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .detail-grid div {
@@ -1682,6 +1711,26 @@ button {
 
 .path-summary {
   border: 1px solid #eef2f7;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+.path-summary p {
+  min-width: 0;
+  margin: 0;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 6px;
+  font-size: 12px;
+}
+
+.path-summary p b,
+.path-summary p span,
+.path-summary p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .result-panel .panel-head {

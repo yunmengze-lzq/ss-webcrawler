@@ -587,12 +587,19 @@ ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, r
     }
 
     const requestOnce = async (payload: Record<string, any>) => {
-      const response = await fetch(buildRequestUrl(config.url, method, payload), {
-        method,
-        headers: requestHeaders,
-        ...(method === 'GET' ? {} : { body: JSON.stringify(payload) }),
-        signal: AbortSignal.timeout(60_000),
-      })
+      const requestUrl = buildRequestUrl(config.url, method, payload)
+      let response: Response
+      try {
+        response = await fetch(requestUrl, {
+          method,
+          headers: requestHeaders,
+          ...(method === 'GET' ? {} : { body: JSON.stringify(payload) }),
+          signal: AbortSignal.timeout(60_000),
+        })
+      } catch (error: any) {
+        const payloadPreview = JSON.stringify(payload).slice(0, 500)
+        throw new Error(`请求失败：${error?.message || String(error)}。请检查 URL、内网/VPN、Cookie/Header、Payload 下拉值。method=${method}; url=${requestUrl}; payload=${payloadPreview}`)
+      }
       const responseText = await response.text()
       let raw: any
       try {

@@ -80,14 +80,20 @@ def main():
                 normalize_value(row.get(column_sources.get(col, col))) if isinstance(row, dict) else None
                 for col in columns
             ]
-            if mode == "upsert" and primary_key:
+            if primary_key and mode in ("upsert", "append"):
                 update_cols = [col for col in columns if col != primary_key]
                 update_sql = ", ".join([f'"{col}"=excluded."{col}"' for col in update_cols])
-                cur.execute(
-                    f'INSERT INTO "{table_name}" ({column_sql}) VALUES ({placeholders}) '
-                    f'ON CONFLICT("{primary_key}") DO UPDATE SET {update_sql}',
-                    values,
-                )
+                if update_sql:
+                    cur.execute(
+                        f'INSERT INTO "{table_name}" ({column_sql}) VALUES ({placeholders}) '
+                        f'ON CONFLICT("{primary_key}") DO UPDATE SET {update_sql}',
+                        values,
+                    )
+                else:
+                    cur.execute(
+                        f'INSERT OR IGNORE INTO "{table_name}" ({column_sql}) VALUES ({placeholders})',
+                        values,
+                    )
             else:
                 cur.execute(f'INSERT INTO "{table_name}" ({column_sql}) VALUES ({placeholders})', values)
             affected += 1
@@ -107,5 +113,6 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as exc:
+        print(str(exc), file=sys.stderr)
         print(json.dumps({"error": str(exc)}, ensure_ascii=False))
         sys.exit(1)

@@ -32,6 +32,15 @@ test('crawler_store writes rows with built-in sqlite3 without installing package
   assert.equal(output.table, 'crawler_rows')
   assert.equal(output.count, 2)
 
+  const rerun = spawnSync('python', ['python/crawler_store.py'], {
+    cwd: process.cwd(),
+    input: JSON.stringify(input),
+    encoding: 'utf-8',
+    env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
+  })
+
+  assert.equal(rerun.status, 0, rerun.stderr || rerun.stdout)
+
   const query = spawnSync('python', ['-c', [
     'import json, sqlite3, sys',
     'conn = sqlite3.connect(sys.argv[1])',
