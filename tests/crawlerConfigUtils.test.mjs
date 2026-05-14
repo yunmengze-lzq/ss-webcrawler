@@ -7,6 +7,7 @@ import {
   buildGetUrl,
   extractRowsFromResponse,
   parseHeaders,
+  parseJsonObject,
   normalizeConfig,
   toIpcSafe,
   selectInitialConfig,
@@ -123,6 +124,19 @@ test('parseHeaders supports copied browser header lines', () => {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   })
+})
+
+test('parseJsonObject supports PowerShell escaped newlines from saved configs', () => {
+  const parsed = parseJsonObject('{`n  "Accept": "application/json"`n}', 'Headers')
+
+  assert.deepEqual(parsed, { Accept: 'application/json' })
+})
+
+test('parseJsonObject reports a field-specific json format error', () => {
+  assert.throws(
+    () => parseJsonObject('{ pageNo: 1 }', 'Payload JSON'),
+    /Payload JSON 格式错误/,
+  )
 })
 
 test('applyRuntimeParams overwrites nested payload filters before running', () => {

@@ -202,10 +202,10 @@ export const applyRuntimeParams = (
 
 export const parseHeaders = (text = '', cookie = ''): Record<string, string> => {
   const headers: Record<string, string> = {}
-  const trimmed = text.trim()
+  const trimmed = normalizeJsonText(text)
   if (trimmed) {
     if (trimmed.startsWith('{')) {
-      Object.assign(headers, JSON.parse(trimmed))
+      Object.assign(headers, parseJsonObject(trimmed, 'Headers'))
     } else {
       for (const line of trimmed.split(/\r?\n/)) {
         const idx = line.indexOf(':')
@@ -217,10 +217,21 @@ export const parseHeaders = (text = '', cookie = ''): Record<string, string> => 
   return headers
 }
 
-export const parseJsonObject = (text = ''): Record<string, unknown> => {
-  const trimmed = text.trim()
+export const normalizeJsonText = (text = '') => text
+  .replace(/^\uFEFF/, '')
+  .replace(/`r/g, '\r')
+  .replace(/`n/g, '\n')
+  .trim()
+
+export const parseJsonObject = (text = '', label = 'JSON'): Record<string, unknown> => {
+  const trimmed = normalizeJsonText(text)
   if (!trimmed) return {}
-  const parsed = JSON.parse(trimmed)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(trimmed)
+  } catch (error: any) {
+    throw new Error(`${label} 格式错误：${error?.message || String(error)}。请使用标准 JSON，例如 {"pageNo":1}，属性名必须使用双引号。`)
+  }
   return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
 }
 

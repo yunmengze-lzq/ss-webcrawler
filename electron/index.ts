@@ -10,6 +10,7 @@ import ExcelJS from 'exceljs'
 import { resolveMainWindowTarget } from './windowTarget'
 import {
   applyRuntimeParams as applyCrawlerRuntimeParams,
+  normalizeJsonText,
   normalizeConfig as normalizeCrawlerConfig,
   normalizeStorageTarget,
   parseHeaders as parseCrawlerHeaders,
@@ -247,10 +248,15 @@ const ensureDir = (dir: string) => {
 
 const safeFileName = (name: string) => name.replace(/[\\/:*?"<>|]/g, '_')
 
-const parseJsonObject = (text = '', fallback: Record<string, any> = {}) => {
-  const trimmed = text.trim()
+const parseJsonObject = (text = '', fallback: Record<string, any> = {}, label = 'JSON') => {
+  const trimmed = normalizeJsonText(text)
   if (!trimmed) return fallback
-  return JSON.parse(trimmed)
+  try {
+    const parsed = JSON.parse(trimmed)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback
+  } catch (error: any) {
+    throw new Error(`${label} 格式错误：${error?.message || String(error)}。请使用标准 JSON，例如 {"pageNo":1}，属性名必须使用双引号。`)
+  }
 }
 
 const parseHeaders = (text = '', cookie = '') => {
@@ -320,7 +326,7 @@ const buildRequestUrl = (url: string, method: string, payload: Record<string, an
 const normalizeRows = (raw: any, config: CrawlerConfig) => {
   const list = getByPath(raw, config.listPath || '')
   const rows = Array.isArray(list) ? list : []
-  const fields = parseJsonObject(config.fieldsText, {})
+  const fields = parseJsonObject(config.fieldsText, {}, '字段映射 JSON')
   if (!Object.keys(fields).length) return rows
 
   return rows.map((item) => {
@@ -574,7 +580,7 @@ ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, r
 
     const method = config.method || 'POST'
     const headers = parseCrawlerHeaders(config.headersText, config.cookie)
-    const basePayload = applyCrawlerRuntimeParams(parseJsonObject(config.payloadText, {}), runtimeParams)
+    const basePayload = applyCrawlerRuntimeParams(parseJsonObject(config.payloadText, {}, 'Payload JSON'), runtimeParams)
     const requestHeaders = {
         'Content-Type': 'application/json;charset=UTF-8',
         ...headers,

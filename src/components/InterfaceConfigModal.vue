@@ -256,6 +256,7 @@
       </div>
 
       <footer class="modal-actions">
+        <p v-if="formError" class="form-error">{{ formError }}</p>
         <button :disabled="stepIndex === 0" @click="goStep(-1)">上一步</button>
         <button :disabled="stepIndex === steps.length - 1" @click="goStep(1)">下一步</button>
         <button @click="$emit('close')">取消</button>
@@ -268,6 +269,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import type { CrawlerConfig, StorageTarget } from '../types'
+import { parseHeaders, parseJsonObject } from '../crawlerConfigUtils'
 
 const props = defineProps<{
   modelValue: CrawlerConfig
@@ -296,6 +298,7 @@ const steps = [
   { key: 'storage', title: '存储输出', caption: 'Excel、SQLite、主键' },
 ]
 const activeStep = ref(steps[0].key)
+const formError = ref('')
 const stepIndex = computed(() => steps.findIndex(step => step.key === activeStep.value))
 const storageOptions: Array<{ value: StorageTarget; label: string; description: string; icon: string }> = [
   { value: 'database', label: '只入本地数据库', description: '推荐给智能体后续查询调用，不生成 Excel。', icon: 'database' },
@@ -346,6 +349,7 @@ const pickDir = async (target: 'outputDir' | 'databasePath') => {
 
 const setStorageTarget = (target: StorageTarget) => {
   draft.storageTarget = target
+  formError.value = ''
 }
 
 const markCookieUpdated = () => {
@@ -369,7 +373,15 @@ const removePayloadField = (index: number) => {
 }
 
 const submit = () => {
-  if (draft.cookie && !draft.cookieUpdatedAt) markCookieUpdated()
-  emit('save', clone(draft))
+  formError.value = ''
+  try {
+    parseHeaders(draft.headersText, draft.cookie)
+    parseJsonObject(draft.payloadText, 'Payload JSON')
+    parseJsonObject(draft.fieldsText, '字段映射 JSON')
+    if (draft.cookie && !draft.cookieUpdatedAt) markCookieUpdated()
+    emit('save', clone(draft))
+  } catch (error: any) {
+    formError.value = error?.message || String(error)
+  }
 }
 </script>
