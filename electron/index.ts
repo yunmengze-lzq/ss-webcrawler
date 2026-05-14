@@ -14,6 +14,7 @@ import {
   normalizeConfig as normalizeCrawlerConfig,
   normalizeStorageTarget,
   parseHeaders as parseCrawlerHeaders,
+  repairJsonText,
   toIpcSafe,
 } from '../src/crawlerConfigUtils'
 
@@ -251,12 +252,17 @@ const safeFileName = (name: string) => name.replace(/[\\/:*?"<>|]/g, '_')
 const parseJsonObject = (text = '', fallback: Record<string, any> = {}, label = 'JSON') => {
   const trimmed = normalizeJsonText(text)
   if (!trimmed) return fallback
-  try {
-    const parsed = JSON.parse(trimmed)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback
-  } catch (error: any) {
-    throw new Error(`${label} 格式错误：${error?.message || String(error)}。请使用标准 JSON，例如 {"pageNo":1}，属性名必须使用双引号。`)
+  const candidates = Array.from(new Set([trimmed, repairJsonText(trimmed)]))
+  let lastError: any = null
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate)
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback
+    } catch (error: any) {
+      lastError = error
+    }
   }
+  throw new Error(label + ' format error: ' + (lastError?.message || String(lastError)) + '. Use an object like {"pageNo":1}; quote property names and string values.')
 }
 
 const parseHeaders = (text = '', cookie = '') => {
@@ -610,6 +616,17 @@ ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, r
       return { response, raw }
     }
 
+    const summarizeRaw = (value: any) => JSON.stringify(value ?? {}).slice(0, 800)
+
+    const buildNoRowsReason = () => {
+      const firstRaw = rawPages[0]?.raw
+      const firstPayload = rawPages[0]?.payload
+      if (!lastOk) {
+        return `取数失败：HTTP ${lastStatus}。未保存文件。响应摘要=${summarizeRaw(firstRaw)}`
+      }
+      return `取数完成但标准行数为 0，已取消保存。请检查 listPath="${config.listPath || '(root)'}"、字段映射 JSON、Payload/分页参数。payload=${JSON.stringify(firstPayload ?? {}).slice(0, 500)}; 响应摘要=${summarizeRaw(firstRaw)}`
+    }
+
     const allRows: any[] = []
     const rawPages: any[] = []
     let lastStatus = 0
@@ -645,6 +662,16 @@ ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, r
 
     const raw = config.paginationEnabled ? { pages: rawPages } : rawPages[0]?.raw
     const rows = allRows
+    if (!rows.length) {
+      return toIpcSafe({
+        success: false,
+        status: lastStatus,
+        count: 0,
+        error: buildNoRowsReason(),
+        sample: [],
+      })
+    }
+
     const runId = `${safeFileName(config.system || config.name)}_${Date.now()}`
     const dir = resolveRunDir(config, runId)
     ensureDir(dir)

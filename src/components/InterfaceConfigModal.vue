@@ -375,13 +375,18 @@ const removePayloadField = (index: number) => {
 const submit = () => {
   formError.value = ''
   try {
-    parseHeaders(draft.headersText, draft.cookie)
-    parseJsonObject(draft.payloadText, 'Payload JSON')
-    parseJsonObject(draft.fieldsText, '字段映射 JSON')
+    const headers = parseHeaders(draft.headersText, draft.cookie)
+    if (draft.cookie) delete headers.Cookie
+    const payload = parseJsonObject(draft.payloadText, 'Payload JSON')
+    const fields = parseJsonObject(draft.fieldsText, 'Fields JSON')
+    draft.headersText = JSON.stringify(headers, null, 2)
+    draft.payloadText = JSON.stringify(payload, null, 2)
+    draft.fieldsText = JSON.stringify(fields, null, 2)
     if (draft.cookie && !draft.cookieUpdatedAt) markCookieUpdated()
     emit('save', clone(draft))
   } catch (error: any) {
     formError.value = error?.message || String(error)
   }
 }
+
 </script>

@@ -134,8 +134,22 @@ test('parseJsonObject supports PowerShell escaped newlines from saved configs', 
 
 test('parseJsonObject reports a field-specific json format error', () => {
   assert.throws(
-    () => parseJsonObject('{ pageNo: 1 }', 'Payload JSON'),
-    /Payload JSON 格式错误/,
+    () => parseJsonObject('{ pageNo: }', 'Payload JSON'),
+    /Payload JSON format error/,
+  )
+})
+
+test('parseJsonObject repairs common copied object formats', () => {
+  assert.deepEqual(parseJsonObject("pageNo: 1, pageSize: '100',", 'Payload JSON'), {
+    pageNo: 1,
+    pageSize: '100',
+  })
+})
+
+test('parseHeaders rejects malformed copied header lines', () => {
+  assert.throws(
+    () => parseHeaders('Accept application/json', ''),
+    /Headers format error/,
   )
 })
 

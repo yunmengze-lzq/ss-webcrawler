@@ -208,8 +208,12 @@ export const parseHeaders = (text = '', cookie = ''): Record<string, string> => 
       Object.assign(headers, parseJsonObject(trimmed, 'Headers'))
     } else {
       for (const line of trimmed.split(/\r?\n/)) {
+        if (!line.trim()) continue
         const idx = line.indexOf(':')
-        if (idx > 0) headers[line.slice(0, idx).trim()] = line.slice(idx + 1).trim()
+        if (idx <= 0) {
+          throw new Error(`Headers format error: cannot parse "${line.trim()}". Use JSON or one Header: Value per line.`)
+        }
+        headers[line.slice(0, idx).trim()] = line.slice(idx + 1).trim()
       }
     }
   }
@@ -219,20 +223,36 @@ export const parseHeaders = (text = '', cookie = ''): Record<string, string> => 
 
 export const normalizeJsonText = (text = '') => text
   .replace(/^\uFEFF/, '')
+  .replace(/[\u201c\u201d]/g, '"')
+  .replace(/[\u2018\u2019]/g, "'")
   .replace(/`r/g, '\r')
   .replace(/`n/g, '\n')
   .trim()
 
+export const repairJsonText = (text = '') => {
+  let next = normalizeJsonText(text)
+  if (!next) return next
+  if (!/^[{\[]/.test(next) && next.includes(':')) next = '{' + next + '}'
+  return next
+    .replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, (_all, value) => '"' + String(value).replace(/"/g, '\\"') + '"')
+    .replace(/,\s*([}\]])/g, '$1')
+    .replace(/([{,]\s*)([A-Za-z_$][\w$.-]*|[\u4e00-\u9fa5][^:\r\n,{]*?)\s*:/g, (_all, prefix, key) => prefix + '"' + String(key).trim() + '":')
+}
+
 export const parseJsonObject = (text = '', label = 'JSON'): Record<string, unknown> => {
   const trimmed = normalizeJsonText(text)
   if (!trimmed) return {}
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(trimmed)
-  } catch (error: any) {
-    throw new Error(`${label} 格式错误：${error?.message || String(error)}。请使用标准 JSON，例如 {"pageNo":1}，属性名必须使用双引号。`)
+  const candidates = Array.from(new Set([trimmed, repairJsonText(trimmed)]))
+  let lastError: any = null
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate)
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+    } catch (error: any) {
+      lastError = error
+    }
   }
-  return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+  throw new Error(label + ' format error: ' + (lastError?.message || String(lastError)) + '. Use an object like {"pageNo":1}; quote property names and string values.')
 }
 
 export const extractRowsFromResponse = (
