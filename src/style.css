@@ -807,6 +807,40 @@ label {
   color: #1d4ed8;
 }
 
+.tool-placeholder {
+  display: grid;
+  gap: 8px;
+  max-width: 680px;
+  padding: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.tool-placeholder strong {
+  font-size: 22px;
+}
+
+.tool-placeholder p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.tool-placeholder span {
+  width: fit-content;
+  padding: 4px 10px;
+  border: 1px solid #dbe3ee;
+  border-radius: 999px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
 .section-title-row {
   display: flex;
   justify-content: space-between;
@@ -1115,6 +1149,93 @@ label {
   border-color: #1e40af;
   background: #f8fbff;
   box-shadow: inset 0 0 0 1px #1e40af;
+}
+
+/* Minimal enterprise toolbox overrides */
+:root {
+  background: #fff;
+}
+
+body {
+  background: #fff;
+}
+
+.app-shell {
+  display: block;
+  min-height: 100vh;
+  background: #fff;
+}
+
+.workspace {
+  display: grid;
+  gap: 18px;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.app-topbar {
+  min-height: auto;
+  padding: 0 0 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.app-topbar h1 {
+  font-size: 30px;
+}
+
+.brand-line .brand-mark,
+.tool-app-card > span {
+  background: #111827;
+  color: #fff;
+}
+
+.primary {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+}
+
+.tool-app-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tool-app-card {
+  min-height: 138px;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.tool-app-card:hover {
+  border-color: #1d4ed8;
+  background: #f8fafc;
+}
+
+.tool-app-card em {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.toolbox-status div,
+.asset-list-panel,
+.asset-detail-panel .detail-card,
+.result-panel {
+  border-color: #e5e7eb;
+}
+
+input,
+select,
+textarea {
+  min-height: 38px;
+}
+
+.config-drawer input,
+.config-drawer select {
+  min-height: 42px;
+}
+
+.config-drawer textarea {
+  min-height: 92px;
 }
 
 .modal-actions {

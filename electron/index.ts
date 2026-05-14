@@ -9,6 +9,8 @@ import ExcelJS from 'exceljs'
 import { resolveMainWindowTarget } from './windowTarget'
 import {
   applyRuntimeParams as applyCrawlerRuntimeParams,
+  normalizeConfig as normalizeCrawlerConfig,
+  normalizeStorageTarget,
   parseHeaders as parseCrawlerHeaders,
   toIpcSafe,
 } from '../src/crawlerConfigUtils'
@@ -364,10 +366,19 @@ const writeRowsToDatabase = async (config: CrawlerConfig, rows: any[]) => {
 
 const saveCrawlerConfig = (config: CrawlerConfig) => {
   ensureDir(crawlerConfigDir())
-  const id = config.id || `${safeFileName(config.system || config.name)}_${Date.now()}`
-  const saved = { ...config, id, updatedAt: new Date().toISOString() }
+  const normalized = normalizeCrawlerConfig(config)
+  const id = normalized.id || `${safeFileName(normalized.system || normalized.name)}_${Date.now()}`
+  const saved = { ...normalized, id, updatedAt: new Date().toISOString() }
   fs.writeFileSync(path.join(crawlerConfigDir(), `${id}.json`), JSON.stringify(saved, null, 2), 'utf-8')
   return saved
+}
+
+const deleteCrawlerConfig = (id: string) => {
+  if (!id) return false
+  const filePath = path.join(crawlerConfigDir(), `${safeFileName(id)}.json`)
+  if (!fs.existsSync(filePath)) return false
+  fs.unlinkSync(filePath)
+  return true
 }
 
 const seedCrawlerExamples = () => {
@@ -475,12 +486,16 @@ ipcMain.handle('crawler-config:list', async () => {
   seedCrawlerExamples()
   return fs.readdirSync(crawlerConfigDir())
     .filter(file => file.endsWith('.json'))
-    .map(file => JSON.parse(fs.readFileSync(path.join(crawlerConfigDir(), file), 'utf-8')))
+    .map(file => normalizeCrawlerConfig(JSON.parse(fs.readFileSync(path.join(crawlerConfigDir(), file), 'utf-8'))))
 })
 
 ipcMain.handle('crawler-config:save', async (_e, config: CrawlerConfig) => {
   const saved = saveCrawlerConfig(config)
   return { success: true, config: saved }
+})
+
+ipcMain.handle('crawler-config:delete', async (_e, id: string) => {
+  return { success: deleteCrawlerConfig(id) }
 })
 
 ipcMain.handle('crawler-config:refresh-cookie', async (_e, config: CrawlerConfig) => {
@@ -525,8 +540,9 @@ ipcMain.handle('crawler-config:refresh-cookie', async (_e, config: CrawlerConfig
   })
 })
 
-ipcMain.handle('crawler-config:run', async (_e, config: CrawlerConfig, runtimeParams: Record<string, any> = {}) => {
+ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, runtimeParams: Record<string, any> = {}) => {
   try {
+    const config = normalizeCrawlerConfig(incomingConfig)
     if (!config.url || !/^https?:\/\//i.test(config.url)) {
       return { success: false, error: '请填写完整的 http/https 接口 URL' }
     }
@@ -603,7 +619,7 @@ ipcMain.handle('crawler-config:run', async (_e, config: CrawlerConfig, runtimePa
     fs.writeFileSync(rawPath, JSON.stringify(raw, null, 2), 'utf-8')
     fs.writeFileSync(rowsPath, JSON.stringify(rows, null, 2), 'utf-8')
 
-    const storageTarget = config.storageTarget || 'excel'
+    const storageTarget = normalizeStorageTarget(config.storageTarget)
     const files: Record<string, string> = { rawPath, rowsPath, metaPath }
     let databaseResult: any = null
 

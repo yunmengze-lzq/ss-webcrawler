@@ -17,6 +17,9 @@ const ipcApi = {
   saveCrawlerConfig: (config: Record<string, any>) =>
     ipcRenderer.invoke('crawler-config:save', config),
 
+  deleteCrawlerConfig: (id: string) =>
+    ipcRenderer.invoke('crawler-config:delete', id),
+
   runCrawlerConfig: (config: Record<string, any>, runtimeParams?: Record<string, any>) =>
     ipcRenderer.invoke('crawler-config:run', config, runtimeParams),
 

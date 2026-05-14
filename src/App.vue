@@ -7,23 +7,24 @@
             <span class="brand-mark">A</span>
             <span>智能体数据工具箱</span>
           </div>
-          <h1>工具箱工作台</h1>
-          <p>把接口资产、智能体资产、RPA 资产和数据分析放在一个工作台里，先沉淀可复用数据源，再给智能体调用。</p>
+          <h1>{{ activeTool === 'home' ? '工具箱工作台' : currentTool.title }}</h1>
+          <p>{{ activeTool === 'home' ? '选择一个小工具进入配置。接口资产负责沉淀可复用数据源，后续再联动智能体、RPA 和分析模块。' : currentTool.description }}</p>
         </div>
-        <div class="top-actions">
+        <div v-if="activeTool !== 'home'" class="top-actions">
+          <button @click="backHome">返回工具箱</button>
           <button @click="activeConfig && runConfig(activeConfig)" :disabled="!activeConfig || running">
             {{ running ? '运行中...' : '运行选中接口' }}
           </button>
-          <button class="primary" @click="openCreate">新建接口</button>
+          <button v-if="activeTool === 'interface_asset'" class="primary" @click="openCreate">新建接口</button>
         </div>
       </header>
 
-      <section class="tool-app-grid">
+      <section v-if="activeTool === 'home'" class="tool-app-grid">
         <button
           v-for="item in toolboxApps"
           :key="item.key"
-          :class="['tool-app-card', { active: item.key === activeTool }]"
-          @click="activeTool = item.key"
+          class="tool-app-card"
+          @click="openTool(item.key)"
         >
           <span>{{ item.code }}</span>
           <strong>{{ item.title }}</strong>
@@ -32,14 +33,14 @@
         </button>
       </section>
 
-      <section class="toolbox-status">
+      <section v-if="activeTool === 'interface_asset'" class="toolbox-status">
         <div v-for="item in toolboxStats" :key="item.label">
           <strong>{{ item.value }}</strong>
           <span>{{ item.label }}</span>
         </div>
       </section>
 
-      <section class="section-title-row">
+      <section v-if="activeTool === 'interface_asset'" class="section-title-row">
         <div>
           <p class="eyebrow">Interface Assets</p>
           <h2>接口资产</h2>
@@ -48,7 +49,13 @@
         <button class="primary" @click="openCreate">新建接口</button>
       </section>
 
-      <div class="asset-layout">
+      <section v-if="activeTool !== 'home' && activeTool !== 'interface_asset'" class="tool-placeholder">
+        <strong>{{ currentTool.title }}</strong>
+        <p>{{ currentTool.description }}</p>
+        <span>{{ currentTool.status }}</span>
+      </section>
+
+      <div v-if="activeTool === 'interface_asset'" class="asset-layout">
         <section class="asset-list-panel">
           <div class="asset-list-head">
             <div>
@@ -114,6 +121,7 @@
               </button>
               <button @click="openEdit(activeConfig)">编辑</button>
               <button @click="duplicateConfig(activeConfig)">复制</button>
+              <button class="danger" @click="deleteConfig(activeConfig)">删除</button>
               <button @click="refreshCookie(activeConfig)">更新 Cookie</button>
             </div>
 
@@ -189,6 +197,7 @@ declare global {
       crawl: (system: string, params?: Record<string, unknown>) => Promise<unknown>
       listCrawlerConfigs: () => Promise<CrawlerConfig[]>
       saveCrawlerConfig: (config: CrawlerConfig) => Promise<{ success: boolean; config: CrawlerConfig }>
+      deleteCrawlerConfig?: (id: string) => Promise<{ success: boolean }>
       runCrawlerConfig: (config: CrawlerConfig, runtimeParams?: RuntimeParams) => Promise<RunResult>
       refreshCrawlerCookie?: (config: CrawlerConfig) => Promise<{ success: boolean; config?: CrawlerConfig; error?: string }>
       selectDirectory?: () => Promise<string | null>
@@ -206,6 +215,7 @@ const systems = [
 ]
 
 const previewStorageKey = 'ts-agent-crawler-configs'
+const deletedStorageKey = 'ts-agent-crawler-deleted-configs'
 const configs = ref<CrawlerConfig[]>([])
 const activeConfig = ref<CrawlerConfig | null>(null)
 const modalOpen = ref(false)
@@ -217,7 +227,7 @@ const pendingRunConfig = ref<CrawlerConfig | null>(null)
 const keyword = ref('')
 const systemFilter = ref('all')
 const storageFilter = ref<'all' | StorageTarget>('all')
-const activeTool = ref('interface_asset')
+const activeTool = ref('home')
 
 const toolboxApps = [
   {
@@ -250,6 +260,10 @@ const toolboxApps = [
   },
 ]
 
+const currentTool = computed(() =>
+  toolboxApps.find(item => item.key === activeTool.value) || toolboxApps[0]
+)
+
 const toolboxStats = computed(() => {
   const total = configs.value.length
   const reusable = configs.value.filter(item => item.url).length
@@ -277,6 +291,11 @@ const filteredConfigs = computed(() => {
 })
 
 const clone = (config: CrawlerConfig) => JSON.parse(JSON.stringify(config)) as CrawlerConfig
+const deletedConfigIds = () => new Set(JSON.parse(localStorage.getItem(deletedStorageKey) || '[]') as string[])
+
+const saveDeletedConfigIds = (ids: Set<string>) => {
+  localStorage.setItem(deletedStorageKey, JSON.stringify([...ids]))
+}
 
 const refreshConfigs = async () => {
   let savedConfigs: CrawlerConfig[] = []
@@ -289,13 +308,28 @@ const refreshConfigs = async () => {
   } catch (error) {
     console.warn('读取接口配置失败，已使用内置真实网站案例。', error)
   }
+  const deleted = deletedConfigIds()
   configs.value = withBuiltInConfigs(Array.isArray(savedConfigs) ? savedConfigs : [])
+    .filter(item => !item.id || !deleted.has(item.id))
   activeConfig.value = selectInitialConfig(configs.value, activeConfig.value)
 }
 
 const persistPreview = (saved: CrawlerConfig) => {
   const next = [saved, ...configs.value.filter(item => item.id !== saved.id)]
   localStorage.setItem(previewStorageKey, JSON.stringify(next))
+}
+
+const removePreview = (id: string) => {
+  const next = configs.value.filter(item => item.id !== id)
+  localStorage.setItem(previewStorageKey, JSON.stringify(next))
+}
+
+const openTool = (key: string) => {
+  activeTool.value = key
+}
+
+const backHome = () => {
+  activeTool.value = 'home'
 }
 
 const openCreate = () => {
@@ -357,7 +391,32 @@ const saveConfig = async (config: CrawlerConfig) => {
     result.value = { success: true, message: '预览模式已保存到浏览器本地。' }
   }
 
+  const deleted = deletedConfigIds()
+  if (saved.id) {
+    deleted.delete(saved.id)
+    saveDeletedConfigIds(deleted)
+  }
+
   modalOpen.value = false
+  await refreshConfigs()
+}
+
+const deleteConfig = async (config: CrawlerConfig) => {
+  if (!config.id) return
+  const confirmed = window.confirm(`删除接口「${config.name}」？`)
+  if (!confirmed) return
+
+  if (window.ipcApi?.deleteCrawlerConfig) {
+    await window.ipcApi.deleteCrawlerConfig(config.id)
+  } else {
+    removePreview(config.id)
+  }
+
+  const deleted = deletedConfigIds()
+  deleted.add(config.id)
+  saveDeletedConfigIds(deleted)
+  activeConfig.value = null
+  result.value = { success: true, message: '接口已删除。' }
   await refreshConfigs()
 }
 
