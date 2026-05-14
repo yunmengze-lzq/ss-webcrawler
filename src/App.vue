@@ -137,7 +137,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import InterfaceConfigModal from './components/InterfaceConfigModal.vue'
 import RunParamsModal from './components/RunParamsModal.vue'
 import RunResultPanel from './components/RunResultPanel.vue'
-import { blankConfig, normalizeConfig, selectInitialConfig, withBuiltInConfigs } from './crawlerConfigUtils'
+import { blankConfig, normalizeConfig, selectInitialConfig, toIpcSafe, withBuiltInConfigs } from './crawlerConfigUtils'
 import type { CrawlerConfig, RunResult, RuntimeParams, StorageTarget } from './types'
 
 declare global {
@@ -267,7 +267,7 @@ const refreshCookie = async (config: CrawlerConfig) => {
     return
   }
   result.value = { message: '请在弹出的登录窗口完成登录，关闭窗口后会自动回写 Cookie。' }
-  const res = await window.ipcApi.refreshCrawlerCookie(config)
+  const res = await window.ipcApi.refreshCrawlerCookie(toIpcSafe(config))
   if (!res.success || !res.config) {
     result.value = { success: false, error: res.error || 'Cookie 更新失败' }
     return
@@ -289,7 +289,7 @@ const saveConfig = async (config: CrawlerConfig) => {
   }
 
   if (window.ipcApi?.saveCrawlerConfig) {
-    const res = await window.ipcApi.saveCrawlerConfig(saved)
+    const res = await window.ipcApi.saveCrawlerConfig(toIpcSafe(saved))
     activeConfig.value = res.config
   } else {
     persistPreview(saved)
@@ -302,7 +302,7 @@ const saveConfig = async (config: CrawlerConfig) => {
 }
 
 const runConfig = async (config: CrawlerConfig) => {
-  pendingRunConfig.value = normalizeConfig(config)
+  pendingRunConfig.value = normalizeConfig(toIpcSafe(config))
   if (pendingRunConfig.value.payloadFields?.length) {
     runModalOpen.value = true
     return
@@ -323,7 +323,7 @@ const executeRun = async (runtimeParams: RuntimeParams) => {
       result.value = { success: false, message: '当前是浏览器预览模式。真实取数、Excel 和数据库写入需要 Electron 版。' }
       return
     }
-    result.value = await window.ipcApi.runCrawlerConfig(config, runtimeParams)
+    result.value = await window.ipcApi.runCrawlerConfig(toIpcSafe(config), toIpcSafe(runtimeParams))
     await refreshConfigs()
   } catch (error: any) {
     result.value = { success: false, error: error?.message ?? String(error) }

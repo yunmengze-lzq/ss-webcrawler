@@ -120,3 +120,18 @@ test('toIpcSafe converts non-cloneable values to plain json', () => {
     },
   })
 })
+
+test('toIpcSafe unwraps proxy-like crawler config before ipc invoke', () => {
+  const config = new Proxy({
+    id: 'proxy_config',
+    payloadFields: [{ id: 'date', label: '日期' }],
+  }, {})
+
+  const safe = toIpcSafe(config)
+
+  assert.deepEqual(safe, {
+    id: 'proxy_config',
+    payloadFields: [{ id: 'date', label: '日期' }],
+  })
+  assert.notEqual(safe, config)
+})
