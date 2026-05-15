@@ -19,7 +19,7 @@ import {
 } from '../src/crawlerConfigUtils'
 
 const USER_DATA_DIR = path.join(app.getPath('appData'), 'ts-agent')
-app.setName('ts-agent')
+app.setName('小冷工具箱')
 app.setPath('userData', USER_DATA_DIR)
 
 const isDev = !app.isPackaged
@@ -99,6 +99,7 @@ const createMainWindow = () => {
 
   mainWin = new BrowserWindow({
     width: 1400, height: 900,
+    title: '小冷工具箱',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -578,6 +579,7 @@ ipcMain.handle('crawler-config:refresh-cookie', async (_e, config: CrawlerConfig
 })
 
 ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, runtimeParams: Record<string, any> = {}) => {
+  let runDiagnostics: Record<string, any> = {}
   try {
     const config = normalizeCrawlerConfig(incomingConfig)
     if (!config.url || !/^https?:\/\//i.test(config.url)) {
@@ -591,9 +593,27 @@ ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, r
         'Content-Type': 'application/json;charset=UTF-8',
         ...headers,
     }
+    const safeHeaders = Object.fromEntries(Object.entries(requestHeaders).map(([key, value]) => [
+      key,
+      /authorization|cookie|token|secret|password/i.test(key) ? '[REDACTED]' : value,
+    ]))
+    const diagnostics: Record<string, any> = {
+      method,
+      url: config.url,
+      listPath: config.listPath || '(root)',
+      paginationEnabled: Boolean(config.paginationEnabled),
+      pageField: config.pageField || '',
+      pageSizeField: config.pageSizeField || '',
+      payloadKeys: Object.keys(basePayload),
+      headerKeys: Object.keys(requestHeaders),
+      safeHeaders,
+    }
+    runDiagnostics = diagnostics
 
     const requestOnce = async (payload: Record<string, any>) => {
       const requestUrl = buildRequestUrl(config.url, method, payload)
+      diagnostics.lastRequestUrl = requestUrl
+      diagnostics.lastPayload = JSON.parse(JSON.stringify(payload))
       let response: Response
       try {
         response = await fetch(requestUrl, {
@@ -604,9 +624,17 @@ ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, r
         })
       } catch (error: any) {
         const payloadPreview = JSON.stringify(payload).slice(0, 500)
+        diagnostics.fetchError = error?.message || String(error)
         throw new Error(`请求失败：${error?.message || String(error)}。请检查 URL、内网/VPN、Cookie/Header、Payload 下拉值。method=${method}; url=${requestUrl}; payload=${payloadPreview}`)
       }
+      diagnostics.lastStatus = response.status
+      diagnostics.lastOk = response.ok
+      diagnostics.lastContentType = response.headers.get('content-type') || ''
       const responseText = await response.text()
+      diagnostics.lastResponsePreview = responseText.slice(0, 1200)
+      if (/签名|验签|signature/i.test(responseText) && /失败|错误|invalid|fail|error/i.test(responseText)) {
+        throw new Error(`接口返回签名验证失败。请从浏览器 Network 重新复制当前请求，保持 URL、Headers、Cookie、Payload 与签名字段一致；不要修改 sign/signature/timestamp/nonce 等字段。HTTP ${response.status}; response=${responseText.slice(0, 800)}`)
+      }
       let raw: any
       try {
         raw = JSON.parse(responseText)
@@ -622,9 +650,9 @@ ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, r
       const firstRaw = rawPages[0]?.raw
       const firstPayload = rawPages[0]?.payload
       if (!lastOk) {
-        return `取数失败：HTTP ${lastStatus}。未保存文件。响应摘要=${summarizeRaw(firstRaw)}`
+        return `取数失败：HTTP ${lastStatus}。未保存文件。最终请求=${diagnostics.lastRequestUrl || config.url}; 响应摘要=${summarizeRaw(firstRaw)}`
       }
-      return `取数完成但标准行数为 0，已取消保存。请检查 listPath="${config.listPath || '(root)'}"、字段映射 JSON、Payload/分页参数。payload=${JSON.stringify(firstPayload ?? {}).slice(0, 500)}; 响应摘要=${summarizeRaw(firstRaw)}`
+      return `取数完成但标准行数为 0，已取消保存。请检查 listPath="${config.listPath || '(root)'}"、字段映射 JSON、Payload/分页参数。最终请求=${diagnostics.lastRequestUrl || config.url}; payload=${JSON.stringify(firstPayload ?? {}).slice(0, 500)}; 响应摘要=${summarizeRaw(firstRaw)}`
     }
 
     const allRows: any[] = []
@@ -668,6 +696,7 @@ ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, r
         status: lastStatus,
         count: 0,
         error: buildNoRowsReason(),
+        diagnostics,
         sample: [],
       })
     }
@@ -736,11 +765,13 @@ ipcMain.handle('crawler-config:run', async (_e, incomingConfig: CrawlerConfig, r
         : storageTarget === 'both'
           ? '已同时保存 Excel 和写入数据库。'
           : '已保存 Excel，并保留 raw.json/rows.json 用于追溯。',
+      diagnostics,
     })
   } catch (err: any) {
     return toIpcSafe({
       success: false,
       error: err?.message || String(err),
+      diagnostics: runDiagnostics,
     })
   }
 })

@@ -8,6 +8,8 @@ import {
   extractRowsFromResponse,
   parseHeaders,
   parseJsonObject,
+  parseNetworkCapture,
+  isSignatureKey,
   normalizeConfig,
   toIpcSafe,
   selectInitialConfig,
@@ -151,6 +153,162 @@ test('parseHeaders rejects malformed copied header lines', () => {
     () => parseHeaders('Accept application/json', ''),
     /Headers format error/,
   )
+})
+
+test('parseNetworkCapture extracts request parts and response mapping', () => {
+  const parsed = parseNetworkCapture(`
+Request URL: https://example.com/api/list
+Request Method: POST
+accept: application/json
+content-type: application/json;charset=UTF-8
+cookie: sid=abc; theme=dark
+
+Query String Parameters
+area: gz
+
+Request Payload
+{ pageNo: 1, pageSize: 20, status: 'active', }
+
+Response
+{
+  "data": {
+    "list": [
+      { "id": 1, "name": "A", "owner": { "login": "octo" } }
+    ],
+    "total": 1
+  }
+}
+  `)
+
+  assert.equal(parsed.url, 'https://example.com/api/list')
+  assert.equal(parsed.method, 'POST')
+  assert.equal(parsed.cookie, 'sid=abc; theme=dark')
+  assert.equal(parsed.headers.Accept, 'application/json')
+  assert.equal(parsed.headers['Content-Type'], 'application/json;charset=UTF-8')
+  assert.deepEqual(parsed.payload, { pageNo: 1, pageSize: 20, status: 'active', area: 'gz' })
+  assert.equal(parsed.listPath, 'data.list')
+  assert.deepEqual(parsed.fields, { id: 'id', name: 'name', login: 'owner.login' })
+})
+
+test('parseNetworkCapture warns about signed request fields', () => {
+  const parsed = parseNetworkCapture(`
+Request URL: https://example.com/api/list
+Request Method: POST
+x-sign: abc
+x-timestamp: 1778750000
+
+Request Payload
+{ pageNo: 1, nonce: 'n1', signature: 's1' }
+  `)
+
+  assert.equal(isSignatureKey('x-sign'), true)
+  assert.equal(isSignatureKey('pageNo'), false)
+  assert.equal(parsed.warnings.some(item => item.includes('signed request fields')), true)
+})
+
+test('parseNetworkCapture supports Chinese Chrome network copy with split key value lines', () => {
+  const parsed = parseNetworkCapture(`
+请求网址
+https://discord.com/api/v9/channels/1493652464828682403/messages?limit=10
+请求方法
+GET
+状态代码
+200 OK
+远程地址
+127.0.0.1:7890
+content-type
+application/json
+server
+cloudflare
+:authority
+discord.com
+:method
+GET
+:path
+/api/v9/channels/1493652464828682403/messages?limit=10
+:scheme
+https
+accept
+*/*
+accept-language
+zh-CN,zh;q=0.9
+authorization
+redacted-token
+cookie
+sid=redacted; cf_clearance=redacted
+referer
+https://discord.com/channels/1493652464312778763/1493652464828682403
+user-agent
+Mozilla/5.0
+x-discord-locale
+zh-CN
+
+Request Payload
+limit=10
+
+Response
+[{type: 0, content: "hello",…}]
+0
+:
+{type: 0, content: "hello",…}
+author
+:
+{id: "1049593878686208040", username: "user"}
+channel_id
+:
+"1493652464828682403"
+content
+:
+"hello"
+id
+:
+"1502254453238005830"
+timestamp
+:
+"2026-05-08T10:22:52.190000+00:00"
+  `)
+
+  assert.equal(parsed.url, 'https://discord.com/api/v9/channels/1493652464828682403/messages?limit=10')
+  assert.equal(parsed.method, 'GET')
+  assert.equal(parsed.cookie, 'sid=redacted; cf_clearance=redacted')
+  assert.equal(parsed.headers.Authorization, 'redacted-token')
+  assert.equal(parsed.headers.Accept, '*/*')
+  assert.equal(parsed.headers.Server, undefined)
+  assert.deepEqual(parsed.payload, { limit: 10 })
+  assert.equal(parsed.fields.content, 'content')
+  assert.equal(parsed.fields.author_id, 'author.id')
+  assert.equal(parsed.fields.author_username, 'author.username')
+  assert.equal(parsed.warnings.some(item => item.includes('DevTools preview')), true)
+})
+
+test('parseNetworkCapture supports curl and fetch copied formats', () => {
+  const curlParsed = parseNetworkCapture(`curl 'https://example.com/api/list?limit=10' \\
+    -H 'accept: application/json' \\
+    -H 'authorization: Bearer redacted' \\
+    --data-raw '{"pageNo":1,"pageSize":20}'`)
+
+  assert.equal(curlParsed.url, 'https://example.com/api/list?limit=10')
+  assert.equal(curlParsed.method, 'POST')
+  assert.equal(curlParsed.headers.Accept, 'application/json')
+  assert.equal(curlParsed.payload.pageNo, 1)
+  assert.equal(curlParsed.payload.pageSize, 20)
+
+  const fetchParsed = parseNetworkCapture(`
+fetch("https://example.com/api/items", {
+  "headers": {
+    "accept": "application/json",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "body": "limit=10&status=active",
+  "method": "POST"
+});
+  `)
+
+  assert.equal(fetchParsed.url, 'https://example.com/api/items')
+  assert.equal(fetchParsed.method, 'POST')
+  assert.equal(fetchParsed.headers.Accept, 'application/json')
+  assert.equal(fetchParsed.headers['X-Requested-With'], 'XMLHttpRequest')
+  assert.deepEqual(fetchParsed.payload, { limit: 10, status: 'active' })
 })
 
 test('applyRuntimeParams overwrites nested payload filters before running', () => {

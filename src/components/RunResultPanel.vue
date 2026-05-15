@@ -29,6 +29,31 @@
       </p>
     </div>
 
+    <div class="run-error-box" v-if="result?.error || result?.message">
+      <h3>{{ result?.success ? '运行提示' : '失败原因' }}</h3>
+      <p>{{ result?.error || result?.message }}</p>
+    </div>
+
+    <div class="file-list" v-if="result?.diagnostics">
+      <h3>请求诊断</h3>
+      <p v-if="diagnostics.lastRequestUrl">
+        <b>最终请求</b>
+        <span>{{ diagnostics.lastRequestUrl }}</span>
+      </p>
+      <p v-if="diagnostics.lastStatus">
+        <b>HTTP</b>
+        <span>{{ diagnostics.lastStatus }} / {{ diagnostics.lastContentType || '-' }}</span>
+      </p>
+      <p v-if="diagnostics.payloadKeys">
+        <b>Payload</b>
+        <span>{{ diagnostics.payloadKeys.join(', ') || '-' }}</span>
+      </p>
+      <p v-if="diagnostics.headerKeys">
+        <b>Headers</b>
+        <span>{{ diagnostics.headerKeys.join(', ') || '-' }}</span>
+      </p>
+    </div>
+
     <div class="preview-box">
       <h3>样例数据</h3>
       <pre>{{ prettyResult }}</pre>
@@ -50,5 +75,6 @@ const resultLabel = computed(() => {
   if (!props.result) return '未运行'
   return props.result.success ? '成功' : '失败'
 })
+const diagnostics = computed(() => props.result?.diagnostics || {})
 const prettyResult = computed(() => JSON.stringify(props.result?.sample ?? props.result ?? {}, null, 2))
 </script>

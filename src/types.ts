@@ -58,7 +58,20 @@ export type RunResult = {
   count?: number
   message?: string
   error?: string
+  diagnostics?: Record<string, unknown>
   files?: Record<string, string>
   sample?: unknown[]
   storageAdvice?: string
+}
+
+export type NetworkCaptureParseResult = {
+  url: string
+  method: 'GET' | 'POST'
+  headers: Record<string, string>
+  cookie: string
+  payload: Record<string, unknown>
+  response: unknown
+  listPath: string
+  fields: Record<string, string>
+  warnings: string[]
 }

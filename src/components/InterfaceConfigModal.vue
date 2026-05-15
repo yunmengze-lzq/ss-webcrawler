@@ -23,6 +23,17 @@
         </nav>
 
         <section class="drawer-form">
+          <section v-if="activeStep === 'import'" class="step-panel import-step-panel">
+            <RequestImportModal
+              :base-config="draft"
+              embedded
+              :show-close="false"
+              :show-create="false"
+              apply-label="填充到当前表单"
+              @apply="applyImportedDraft"
+            />
+          </section>
+
           <section v-if="activeStep === 'source'" class="step-panel">
             <h3>接口来源</h3>
             <p>先填最关键的 URL 和方法，确保这个接口是可以被主进程访问的。</p>
@@ -33,7 +44,7 @@
             <div class="form-grid">
               <label>
                 接口名称
-                <input v-model="draft.name" placeholder="负载率日数据接口" />
+                <input v-model="draft.name" placeholder="Discord 消息接口 / 内网台账接口" />
               </label>
               <label>
                 请求方法
@@ -45,22 +56,21 @@
               <label>
                 系统
                 <select v-model="draft.system">
-                  <option value="load_meter">计量负载率</option>
-                  <option value="voltage">电压监测</option>
-                  <option value="asset">资产台账</option>
-                  <option value="gis">GIS 坐标</option>
-                  <option value="marketing">营销报装</option>
-                  <option value="custom">自定义</option>
+                  <optgroup v-for="group in powerGridSystemGroups" :key="group.label" :label="group.label">
+                    <option v-for="item in group.options" :key="item.key" :value="item.key">
+                      {{ item.name }}
+                    </option>
+                  </optgroup>
                 </select>
               </label>
               <label>
                 分类
-                <input v-model="draft.category" placeholder="基础台账 / 运行监测 / 问题库" />
+                <input v-model="draft.category" placeholder="公网测试 / 内网数据 / 消息记录" />
               </label>
             </div>
             <label>
               说明
-              <input v-model="draft.description" placeholder="这个接口给智能体提供什么数据" />
+              <input v-model="draft.description" placeholder="这个接口给小冷工具箱提供什么数据" />
             </label>
           </section>
 
@@ -236,7 +246,7 @@
               </label>
               <label>
                 数据库表名
-                <input v-model="draft.tableName" placeholder="load_meter_daily" />
+                <input v-model="draft.tableName" placeholder="crawler_rows / discord_messages" />
               </label>
               <label>
                 主键字段
@@ -270,6 +280,8 @@
 import { computed, reactive, ref, watch } from 'vue'
 import type { CrawlerConfig, StorageTarget } from '../types'
 import { parseHeaders, parseJsonObject } from '../crawlerConfigUtils'
+import { powerGridSystemGroups } from '../powerGridDomains'
+import RequestImportModal from './RequestImportModal.vue'
 
 const props = defineProps<{
   modelValue: CrawlerConfig
@@ -291,6 +303,7 @@ declare global {
 const clone = (value: CrawlerConfig) => JSON.parse(JSON.stringify(value)) as CrawlerConfig
 const draft = reactive<CrawlerConfig>(clone(props.modelValue))
 const steps = [
+  { key: 'import', title: '导入解析', caption: 'Headers / Payload / JSON' },
   { key: 'source', title: '接口来源', caption: '名称、方法、URL' },
   { key: 'request', title: '请求参数', caption: 'Headers、Cookie、Payload' },
   { key: 'payload', title: '筛选翻页', caption: '运行时字段、分页' },
@@ -370,6 +383,12 @@ const addPayloadField = () => {
 
 const removePayloadField = (index: number) => {
   draft.payloadFields.splice(index, 1)
+}
+
+const applyImportedDraft = (config: CrawlerConfig) => {
+  Object.assign(draft, clone(config))
+  activeStep.value = 'source'
+  formError.value = ''
 }
 
 const submit = () => {

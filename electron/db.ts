@@ -12,11 +12,11 @@ import { spawnPython } from './pythonBridge'
 import { log } from './log/log'
 
 const USER_DATA_DIR = path.join(app.getPath('appData'), 'ts-agent')
-app.setName('ts-agent')
+app.setName('小冷工具箱')
 app.setPath('userData', USER_DATA_DIR)
 
 const DATA_DIR = path.join(app.getPath('userData'), 'data')
-export const DB_PATH = path.join(DATA_DIR, 'ts_agent.db')
+export const DB_PATH = path.join(DATA_DIR, 'xiaoleng_toolbox.db')
 const ENABLE_LOCAL_DB = process.env.TS_AGENT_ENABLE_LOCAL_DB === '1'
 
 /** 确保目录存在，调用 Python 建表（幂等） */

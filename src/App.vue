@@ -5,7 +5,7 @@
         <div>
           <div class="brand-line">
             <span class="brand-mark" v-html="iconSvg('spark')"></span>
-            <span>智能体数据工具箱</span>
+            <span>小冷工具箱</span>
           </div>
           <h1>{{ activeTool === 'home' ? '工具箱工作台' : currentTool.title }}</h1>
           <p>{{ activeTool === 'home' ? '选择一个小工具进入配置。接口资产负责沉淀可复用数据源，后续再联动智能体、RPA 和分析模块。' : currentTool.description }}</p>
@@ -221,6 +221,7 @@ import InterfaceConfigModal from './components/InterfaceConfigModal.vue'
 import RunParamsModal from './components/RunParamsModal.vue'
 import RunResultPanel from './components/RunResultPanel.vue'
 import { blankConfig, normalizeConfig, selectInitialConfig, toIpcSafe, withBuiltInConfigs } from './crawlerConfigUtils'
+import { powerGridSystemName, powerGridSystems } from './powerGridDomains'
 import type { CrawlerConfig, RunResult, RuntimeParams, StorageTarget } from './types'
 
 declare global {
@@ -238,14 +239,7 @@ declare global {
   }
 }
 
-const systems = [
-  { key: 'load_meter', name: '计量负载率' },
-  { key: 'voltage', name: '电压监测' },
-  { key: 'asset', name: '资产台账' },
-  { key: 'gis', name: 'GIS 坐标' },
-  { key: 'marketing', name: '营销报装' },
-  { key: 'custom', name: '自定义' },
-]
+const systems = powerGridSystems
 
 const previewStorageKey = 'ts-agent-crawler-configs'
 const deletedStorageKey = 'ts-agent-crawler-deleted-configs'
@@ -316,6 +310,7 @@ const icons: Record<string, string> = {
   edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17.2V20h2.8L17.9 8.9l-2.8-2.8L4 17.2zM19.7 7.1a1 1 0 0 0 0-1.4l-1.4-1.4a1 1 0 0 0-1.4 0l-.8.8 2.8 2.8.8-.8z"/></svg>',
   copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm0 2v10h10V9H8zM4 3h10v2H4v10H2V5a2 2 0 0 1 2-2z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2zm-2 6h10l-.8 11H7.8L7 9zm3 2v7h2v-7h-2zm4 0v7h2v-7h-2z"/></svg>',
+  import: '<svg view="0 0 24 24" aria-hidden="true"><path d="M4 4h16v5h-2V6H6v12h12v-3h2v5H4V4zm10 4l5 4-5 4v-3H9v-2h5V8z"/></svg>',
   cookie: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12.4A8 8 0 1 1 11.6 4 4 4 0 0 0 16 8.4a4 4 0 0 0 4 4zM9 9H7v2h2V9zm5 7h-2v2h2v-2zm-5-1H7v2h2v-2zm5-4h-2v2h2v-2z"/></svg>',
   database: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.4 0 8 1.3 8 3v12c0 1.7-3.6 3-8 3s-8-1.3-8-3V6c0-1.7 3.6-3 8-3zm0 2c-3.5 0-5.7.8-6 1 .3.2 2.5 1 6 1s5.7-.8 6-1c-.3-.2-2.5-1-6-1zM6 9v2c.6.5 2.8 1.2 6 1.2s5.4-.7 6-1.2V9c-1.5.7-3.6 1-6 1s-4.5-.3-6-1zm0 5v3.8c.4.4 2.6 1.2 6 1.2s5.6-.8 6-1.2V14c-1.5.7-3.6 1-6 1s-4.5-.3-6-1z"/></svg>',
   excel: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5V3zm9 2H7v14h10V8h-3V5zm-5 6l1.8 2.5L12.7 11H15l-3 4 3 4h-2.3l-1.9-2.6L9 19H6.8l2.9-4-2.9-4H9z"/></svg>',
@@ -535,7 +530,7 @@ const executeRun = async (runtimeParams: RuntimeParams) => {
   }
 }
 
-const systemName = (key: string) => systems.find(item => item.key === key)?.name || key
+const systemName = (key: string) => powerGridSystemName(key)
 const storageName = (target: StorageTarget) => ({
   excel: 'Excel 文件',
   database: '本地数据库',

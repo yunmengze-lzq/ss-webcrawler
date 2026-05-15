@@ -1,7 +1,7 @@
 {
-  "name": "ts-agent",
+  "name": "xiaoleng-toolbox",
   "version": "1.0.0",
-  "description": "低压台区规划智能体系统",
+  "description": "小冷工具箱 - 本地接口取数与数据整理工具",
   "main": "dist-electron/index.js",
   "engines": {
     "node": "24.14.1",
@@ -39,8 +39,8 @@
     "vue-tsc": "^1.8.27"
   },
   "build": {
-    "appId": "com.csg.ts-agent",
-    "productName": "台区规划智能体",
+    "appId": "com.xiaoleng.toolbox",
+    "productName": "小冷工具箱",
     "win": {
       "target": [
         {
